@@ -1,0 +1,1 @@
+import{eH as a,c as o,d0 as s}from"./iframe-BqHSr5b_.js";function m(n,r){const{xs:u,smAndDown:i,mdAndDown:l}=a();return{visibleHeaders:o(()=>{const t=s(r)??[];return s(n).filter(e=>!(t.includes(e.key)||e.hideBelow==="sm"&&u.value||e.hideBelow==="md"&&i.value||e.hideBelow==="lg"&&l.value))})}}export{m as u};
