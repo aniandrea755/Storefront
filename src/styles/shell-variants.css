@@ -1,0 +1,229 @@
+/**
+ * Shell variants — deltas from the Classic baseline, keyed off
+ * <html data-shell="classic|studio|rail"> (set by useAppTheme).
+ *
+ * classic: baseline (white bordered sidebar, bordered app bar) — no rules here.
+ * studio:  sidebar + app bar share the canvas; the rounded content frame
+ *          (App.vue .mp-content-frame, data-frame="on") carries the structure.
+ * rail:    no panel CSS of its own — it rides the data-sidebar="dark" axis
+ *          and the rail-collapsed default (both applied by App.vue).
+ *
+ * Loaded after sidebar-*.css so equal-specificity !important rules here win.
+ */
+
+/* ── One nav surface, two consumers ─────────────────────────────────────
+   The head nav and side nav are bound to the same variable: the light
+   sidebar theme derives --sidebar-bg from it (sidebar-light.css) and the
+   app bar reads it directly below — the two can never drift per shell. */
+:root {
+  /* Clearly-perceptible light gray for the nav cluster (side + head nav) in
+     every light shell — this is the Gray (default) axis. Distinctly grayer
+     than the near-white canvas so it never reads as white. Classic keeps its
+     borders, Studio drops them. */
+  --mp-nav-surface: var(--mp-color-light-navSurfaceGray);
+}
+
+/* Head nav shares the side nav surface (light app theme; the dark app
+   theme keeps its own chrome). White sidebar axis: white chrome, and the
+   content canvas flips to the metal gray (rule further down). */
+html[data-sidebar="white"] {
+  --mp-nav-surface: var(--mp-color-light-surface);
+}
+
+html[data-theme="light"][data-sidebar="white"] .mp-appbar,
+html[data-theme="light"][data-sidebar="gray"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+}
+
+/* ── Studio: edges dissolve; the framed content card is the structure ── */
+html[data-shell="studio"][data-sidebar="white"] .mp-sidebar,
+html[data-shell="studio"][data-sidebar="gray"] .mp-sidebar {
+  border-right-color: transparent !important;
+}
+
+html[data-theme="light"][data-shell="studio"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+  border-bottom: 0 !important;
+}
+
+/* Dark studio keeps elevated nav chrome (L1 surface), not canvas — see
+   html[data-theme="dark"] --mp-nav-surface bind above. */
+html[data-theme="dark"][data-shell="studio"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+  border-bottom: 0 !important;
+}
+
+/* Studio blends nav into canvas: make the light canvas match the nav gray so
+   the borderless app bar meets it seamlessly (no faint two-gray band). The
+   white content frame provides the contrast. Light theme only — dark studio
+   keeps its own background. */
+html[data-theme="light"][data-shell="studio"] .v-main {
+  background: var(--mp-nav-surface) !important;
+}
+
+/* ── White nav axis: white chrome over a metal-gray canvas ──────────────
+   Inverse of the default: the side + head nav go white and the content
+   container carries the gray. Wins over the studio canvas bind above
+   (declared later at equal specificity). Light theme only. */
+html[data-theme="light"][data-sidebar="white"] .v-main {
+  background: var(--mp-color-light-navSurfaceGray) !important;
+}
+
+/* In Studio/Rail the rounded content frame is white and covers .v-main, so the
+   gray canvas wouldn't show. For the White variant, carry the gray onto the
+   frame too — the content sits on light gray and the white cards read clearly. */
+html[data-theme="light"][data-sidebar="white"] .mp-content-frame {
+  background: var(--mp-color-light-navSurfaceGray) !important;
+}
+
+html[data-theme="light"][data-shell="studio"][data-sidebar="white"] .mp-appbar {
+  background: var(--mp-color-light-surface) !important;
+}
+
+/* Classic keeps its appbar hairline; on the all-white chrome give the seam a
+   touch more presence so bar and canvas don't fuse. */
+html[data-theme="light"][data-sidebar="white"] .mp-appbar {
+  border-bottom-color: rgba(var(--mp-rgb-color-light-textPrimary), 0.08) !important;
+}
+
+/* ── Dark app theme: the nav cluster paints from the dark token ramp ─────
+   Same bind, dark value, so the side nav (sidebar-dark.css) and head nav stay
+   in lockstep. Classic's app bar already paints --surface-primary and Studio's
+   paints the canvas (rule above), which is exactly what these binds resolve
+   to — so the seam between the two navs is one continuous surface.
+   Declared after the light binds above: equal specificity, later wins. */
+html[data-theme="dark"] {
+  --mp-nav-surface: var(--mp-color-dark-surface);
+}
+
+/* Light studio dissolves nav into canvas; dark studio keeps L1 nav chrome so
+   cards (also L1) do not sit visually above the navigation cluster. */
+
+/* ── Dark side nav on a light app theme (rail shell / dark-sidebar accounts) ──
+   The head nav matches the panel, plus on-dark foregrounds for the quiet
+   controls. Scoped to the light theme: in dark mode the app bar's own chrome is
+   already correct, so there is nothing to override.
+   Colours come from the dark token ramp by name, since the surrounding theme
+   is light here. */
+html[data-sidebar="dark"] {
+  --mp-nav-surface: var(--mp-color-dark-surface);
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+  border-bottom-color: var(--mp-color-dark-borderDividerMuted) !important;
+}
+
+/* P5.5: .appbar-mobile-search-btn was missing from this list. Its scoped style
+   is `color: var(--text-primary)`, which under light theme + dark sidebar skin
+   is the DARK ink — a dark icon on the dark bar. Every control in the bar now
+   takes the dark-theme ink here. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-action-btn,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-btn,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-hamburger-btn,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-mobile-search-btn {
+  color: var(--mp-color-dark-textPrimary) !important;
+  /* Resting chip must lighten on the dark bar (the light-theme on-surface tint
+     the scoped style uses would be invisible here). */
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.07) !important;
+}
+
+/* Hover on those controls must also lighten: the scoped rule reaches for
+   --surface-interactive-hover, a near-white light-theme slab. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-mobile-search-btn:hover {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.13) !important;
+}
+
+/* The ⌘K chip inside the create button: --surface-secondary / --muted /
+   --border-subtle all resolve to light-theme values here, putting a near-white
+   chip with mid-grey text on the dark bar. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-kbd {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.12) !important;
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.18) !important;
+  color: var(--mp-color-dark-textMuted) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-divider {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.16) !important;
+}
+
+/* Search field + Da Vinci pill: on the dark head nav, stark white slabs are
+   too loud. Give them a translucent light-on-dark surface (matching the
+   utility buttons) with light text/icons so they read as raised controls. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search .v-field {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.08) !important;
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.16) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search .v-field--focused {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.13) !important;
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.30) !important;
+  box-shadow: 0 0 0 3px rgba(var(--mp-rgb-color-dark-textPrimary), 0.10) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search .v-field__input,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search input {
+  color: var(--mp-color-dark-textPrimary) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search input::placeholder {
+  color: var(--mp-color-dark-textMuted) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search .v-field__prepend-inner .v-icon {
+  color: var(--mp-color-dark-iconSecondary) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-search-cmd {
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.18) !important;
+  color: var(--mp-color-dark-textMuted) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.08) !important;
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.16) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill:hover {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.13) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill__label {
+  color: var(--mp-color-dark-textPrimary) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill .assistant-pill__chevron {
+  color: var(--mp-color-dark-textMuted) !important;
+}
+
+/* The Da Vinci orb reads its ink from the inherited `color`; on the dark nav
+   render it light (its built-in inverse tone) so the mark doesn't go dim. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill .dv-orbit-orb {
+  color: var(--mp-color-dark-textPrimary) !important;
+}
+
+/* ── Studio: stronger icons on the light-gray nav ───────────────────────
+   Side-nav icons darken from the muted textMuted default for clear contrast
+   on var(--mp-color-light-navSurfaceGray); the quiet "+" is raised to match the other head-nav icons.
+   Light theme only, and never on the dark sidebar — a dark icon on dark nav
+   chrome would be invisible. */
+html[data-theme="light"][data-shell="studio"]:not([data-sidebar="dark"]) .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
+  color: var(--mp-color-light-navIconStudio) !important;
+}
+
+html[data-shell="studio"]:not([data-sidebar="dark"]) .mp-appbar .appbar-create-btn {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-action-btn:hover,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-action-btn:focus-visible,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-btn:hover,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-btn:focus-visible {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.10) !important;
+  color: var(--mp-color-dark-textPrimary) !important;
+}
+
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .user-pill:hover {
+  box-shadow: 0 0 0 3px rgba(var(--mp-rgb-color-dark-textPrimary), 0.14);
+}

@@ -1,0 +1,436 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import { useRetailStore } from '@/stores/useRetail'
+import type { Register, RegisterStatus } from '@/stores/useRetail'
+import { formatAgo } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
+
+const store = useRetailStore()
+const toast = useToast()
+function showToast(message: string) { toast.info(message) }
+
+/* ── Filter tabs ───────────────────────────────────────────────── */
+const activeTab = ref('all')
+
+const tabCounts = computed(() => {
+  const list = store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId))
+  return {
+    all: list.length,
+    online: list.filter((r) => r.status === 'online').length,
+    offline: list.filter((r) => r.status === 'offline').length,
+    syncing: list.filter((r) => r.status === 'syncing').length,
+  }
+})
+
+const tabs = computed(() => [
+  { label: 'All',     key: 'all',     count: tabCounts.value.all },
+  { label: 'Online',  key: 'online',  count: tabCounts.value.online },
+  { label: 'Offline', key: 'offline', count: tabCounts.value.offline },
+  { label: 'Syncing', key: 'syncing', count: tabCounts.value.syncing },
+])
+
+/* ── Table ─────────────────────────────────────────────────────── */
+const search = ref('')
+const selectedRows = ref<string[]>([])
+
+const tableHeaders = [
+  { title: 'Name',             key: 'name',                sortable: true },
+  { title: 'Location',         key: 'locationId',          sortable: false, width: 160 },
+  { title: 'Device',           key: 'deviceModel',         sortable: false, width: 180 },
+  { title: 'App version',      key: 'appVersion',          sortable: true,  width: 120 },
+  { title: 'Status',           key: 'status',              sortable: false, width: 130 },
+  { title: 'Last seen',        key: 'lastSeenAt',          sortable: false, width: 130 },
+  { title: 'Pending txns',     key: 'pendingOfflineTxns',  sortable: true,  align: 'end' as const, width: 120 },
+  { title: 'Terminal',         key: 'pairedTerminal',      sortable: false, width: 150 },
+  { title: '',                 key: 'actions',             sortable: false, width: 56 },
+]
+
+const rows = computed(() => {
+  let list = store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId))
+  if (activeTab.value !== 'all') list = list.filter((r) => r.status === activeTab.value)
+  return list
+})
+
+const STATUS_CHIP_STATUS: Record<RegisterStatus, string> = {
+  online: 'Active',
+  offline: 'Inactive',
+  syncing: 'Processing',
+}
+
+/* ── Detail drawer ─────────────────────────────────────────────── */
+const detailDrawer = ref(false)
+const selectedRegister = ref<Register | null>(null)
+
+function openDetail(item: Register) {
+  selectedRegister.value = item
+  detailDrawer.value = true
+}
+
+/* ── Pair register drawer ──────────────────────────────────────── */
+const pairDrawer = ref(false)
+const pairForm = ref({ name: '', location: '', deviceType: 'iPad', terminal: '', printer: '' })
+
+function savePair() {
+  showToast('Register paired — mock only')
+  pairDrawer.value = false
+}
+
+/* ── Bulk actions ──────────────────────────────────────────────── */
+function bulkForceResync() {
+  const count = selectedRows.value.length
+  store.forceResync(selectedRows.value)
+  selectedRows.value = []
+  showToast(`Resync sent to ${count} register${count === 1 ? '' : 's'}`)
+}
+
+function bulkDeactivate() {
+  const count = selectedRows.value.length
+  store.deactivateRegisters(selectedRows.value)
+  selectedRows.value = []
+  showToast(`${count} register${count === 1 ? '' : 's'} deactivated`)
+}
+
+const DEVICE_TYPES = ['iPad', 'iPhone', 'Android Tablet', 'Android Phone']
+const TERMINALS = ['Stripe S700', 'Stripe M2', 'Tap to Pay', 'None']
+const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
+</script>
+
+<template>
+  <div class="h-100 d-flex flex-column gap-5">
+    <MpPageHeader
+      title="Registers"
+      :subtitle="`POS devices for ${store.isAllLocations ? 'all locations' : store.activeLocation?.name ?? ''}. Monitor status, sync events, and offline queues.`"
+    >
+      <template #actions>
+        <v-btn variant="outlined" class="text-none" prepend-icon="refresh-cw" @click="showToast('Force sync sent to all online registers')">
+          Sync all
+        </v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" @click="pairDrawer = true">
+          Pair register
+        </v-btn>
+      </template>
+    </MpPageHeader>
+
+    <!-- Fleet status summary -->
+    <v-row dense>
+      <v-col cols="6" sm="3">
+        <div class="retail-fleet-tile">
+          <div class="retail-fleet-tile__dot retail-status-dot retail-status-dot--online" />
+          <div>
+            <div class="retail-fleet-tile__value">{{ tabCounts.online }}</div>
+            <div class="retail-fleet-tile__label">Online</div>
+          </div>
+        </div>
+      </v-col>
+      <v-col cols="6" sm="3">
+        <div class="retail-fleet-tile">
+          <div class="retail-fleet-tile__dot retail-status-dot retail-status-dot--syncing" />
+          <div>
+            <div class="retail-fleet-tile__value">{{ tabCounts.syncing }}</div>
+            <div class="retail-fleet-tile__label">Syncing</div>
+          </div>
+        </div>
+      </v-col>
+      <v-col cols="6" sm="3">
+        <div class="retail-fleet-tile">
+          <div class="retail-fleet-tile__dot retail-status-dot retail-status-dot--offline" />
+          <div>
+            <div class="retail-fleet-tile__value">{{ tabCounts.offline }}</div>
+            <div class="retail-fleet-tile__label">Offline</div>
+          </div>
+        </div>
+      </v-col>
+      <v-col cols="6" sm="3">
+        <div class="retail-fleet-tile">
+          <v-icon size="16" color="warning" class="retail-fleet-tile__dot">clock</v-icon>
+          <div>
+            <div class="retail-fleet-tile__value">{{ store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId)).reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
+            <div class="retail-fleet-tile__label">Pending txns</div>
+          </div>
+        </div>
+      </v-col>
+    </v-row>
+
+    <MpFilterTabs v-model="activeTab" :tabs="tabs" />
+
+    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
+      <MpDataTableToolbar v-model:search="search" search-placeholder="Search registers…">
+        <template #actions>
+          <v-btn v-if="selectedRows.length === 0" variant="outlined" class="text-none" prepend-icon="download" @click="showToast('Export registers — mock only')">
+            Export
+          </v-btn>
+        </template>
+      </MpDataTableToolbar>
+
+      <v-data-table
+        v-model="selectedRows"
+        :headers="tableHeaders"
+        :items="rows"
+        :search="search"
+        item-value="id"
+        hover
+        show-select
+        density="comfortable"
+        :items-per-page="25"
+        class="retail-clickable-rows"
+        @click:row="(_e: Event, { item }: { item: Register }) => openDetail(item)"
+      >
+        <template #item.name="{ item }">
+          <div class="d-flex align-center ga-2">
+            <div :class="['retail-status-dot', `retail-status-dot--${item.status}`]" />
+            <span class="font-weight-medium">{{ item.name }}</span>
+          </div>
+        </template>
+
+        <template #item.locationId="{ item }">
+          <v-chip size="x-small" variant="tonal" color="primary" class="font-weight-medium">
+            {{ store.locationName(item.locationId) }}
+          </v-chip>
+        </template>
+
+        <template #item.deviceModel="{ item }">
+          <div class="d-flex align-center ga-1">
+            <v-icon size="16" class="text-medium-emphasis">
+              {{ item.deviceType.includes('iPad') || item.deviceType.includes('Tablet') ? 'tablet' : 'smartphone' }}
+            </v-icon>
+            <span class="text-body-2">{{ item.deviceModel }}</span>
+          </div>
+        </template>
+
+        <template #item.appVersion="{ item }">
+          <span class="text-body-2 text-mono">v{{ item.appVersion }}</span>
+        </template>
+
+        <template #item.status="{ item }">
+          <MpStatusChip :status="STATUS_CHIP_STATUS[item.status]" type="general" size="sm" />
+        </template>
+
+        <template #item.lastSeenAt="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ formatAgo(item.lastSeenAt) }}</span>
+        </template>
+
+        <template #item.pendingOfflineTxns="{ item }">
+          <span v-if="item.pendingOfflineTxns > 0" class="font-weight-bold text-warning">
+            {{ item.pendingOfflineTxns }}
+          </span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+
+        <template #item.pairedTerminal="{ item }">
+          <span v-if="item.pairedTerminal" class="text-body-2">{{ item.pairedTerminal }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+
+        <template #item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Register actions" :itemLabel="item.name">
+            <MpMenuItem title="Force resync" icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
+            <MpMenuItem title="Reprint last receipt" icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
+            <v-divider class="my-1" />
+            <!-- Severity aligned with the detail drawer's error-tonal Deactivate (GAPS §5 closed). -->
+            <MpMenuItem title="Deactivate" icon="power" danger @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
+          </MpRowActionsMenu>
+        </template>
+
+        <template #no-data>
+          <MpEmptyState icon="tablet-smartphone" title="No registers" description="Pair a device to get started." />
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <!-- Bulk bar -->
+    <MpFloatingBulkBar :count="selectedRows.length" @clear="selectedRows = []">
+      <v-btn variant="tonal" class="text-none" prepend-icon="refresh-cw" @click="bulkForceResync">
+        Force resync
+      </v-btn>
+      <v-btn variant="tonal" class="text-none" prepend-icon="power" color="warning" @click="bulkDeactivate">
+        Deactivate
+      </v-btn>
+    </MpFloatingBulkBar>
+
+    <!-- Detail drawer -->
+    <MpFormDrawer
+      v-model="detailDrawer"
+      :title="selectedRegister?.name ?? 'Register'"
+      :subtitle="selectedRegister ? store.locationName(selectedRegister.locationId) : ''"
+    >
+      <template v-if="selectedRegister">
+        <!-- Status banner -->
+        <div class="register-detail-status" :class="`register-detail-status--${selectedRegister.status}`">
+          <div :class="['retail-status-dot', `retail-status-dot--${selectedRegister.status}`]" />
+          <span class="font-weight-medium text-capitalize">{{ selectedRegister.status }}</span>
+          <span class="text-caption text-medium-emphasis ms-auto">
+            Last seen {{ formatAgo(selectedRegister.lastSeenAt) }}
+          </span>
+        </div>
+
+        <!-- Device info -->
+        <MpFormSection title="Device">
+          <v-list density="compact" :border="false" rounded="0" class="pa-0 bg-transparent">
+            <v-list-item title="Model" :subtitle="selectedRegister.deviceModel" />
+            <v-divider />
+            <v-list-item title="Type" :subtitle="selectedRegister.deviceType" />
+            <v-divider />
+            <v-list-item title="App version" :subtitle="`v${selectedRegister.appVersion}`" />
+          </v-list>
+        </MpFormSection>
+
+        <!-- Hardware pairing -->
+        <MpFormSection title="Paired hardware">
+          <v-list density="compact" :border="false" rounded="0" class="pa-0 bg-transparent">
+            <v-list-item title="Payment terminal">
+              <template #append>
+                <span v-if="selectedRegister.pairedTerminal" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedTerminal }}</span>
+                <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair terminal — mock only')">Pair</v-btn>
+              </template>
+            </v-list-item>
+            <v-divider />
+            <v-list-item title="Receipt printer">
+              <template #append>
+                <span v-if="selectedRegister.pairedPrinter" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedPrinter }}</span>
+                <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair printer — mock only')">Pair</v-btn>
+              </template>
+            </v-list-item>
+          </v-list>
+        </MpFormSection>
+
+        <!-- Offline queue -->
+        <MpFormSection title="Offline queue">
+          <MpAlert
+            v-if="selectedRegister.pendingOfflineTxns > 0"
+            tone="warning"
+            live="off"
+            :title="`${selectedRegister.pendingOfflineTxns} transactions pending sync`"
+          >
+            These will upload automatically when the device reconnects.
+            <template #actions>
+              <v-btn size="small" variant="tonal" color="warning" class="text-none" @click="showToast('Sync triggered — mock only')">Sync now</v-btn>
+            </template>
+          </MpAlert>
+          <div v-else class="text-body-2 text-medium-emphasis">No pending transactions. Device is fully synced.</div>
+        </MpFormSection>
+
+        <!-- Actions -->
+        <div class="d-flex flex-column gap-2">
+          <v-btn variant="outlined" class="text-none" prepend-icon="refresh-cw" @click="showToast('Force resync sent — mock only')">
+            Force resync
+          </v-btn>
+          <v-btn variant="outlined" class="text-none" prepend-icon="printer" @click="showToast('Test receipt printed — mock only')">
+            Print test receipt
+          </v-btn>
+        </div>
+      </template>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="detailDrawer = false">Close</v-btn>
+        <v-btn variant="tonal" color="error" class="text-none" prepend-icon="power" @click="showToast('Deactivated — mock only'); detailDrawer = false">
+          Deactivate
+        </v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Pair register drawer -->
+    <MpFormDrawer v-model="pairDrawer" title="Pair new register" subtitle="Connect a device to your POS network">
+      <MpFormGrid>
+        <v-text-field v-model="pairForm.name" label="Register name" placeholder="e.g. Front counter" />
+        <v-select
+          v-model="pairForm.location"
+          label="Location"
+          :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
+        />
+        <v-select
+          v-model="pairForm.deviceType"
+          label="Device type"
+          :items="DEVICE_TYPES"
+        />
+        <v-select
+          v-model="pairForm.terminal"
+          label="Payment terminal (optional)"
+          :items="TERMINALS"
+        />
+        <v-select
+          v-model="pairForm.printer"
+          label="Receipt printer (optional)"
+          :items="PRINTERS"
+        />
+      </MpFormGrid>
+
+      <MpFormSection title="Pairing instructions">
+        <div class="text-body-2 text-medium-emphasis">
+          1. Open the Retail app on your device.<br>
+          2. Go to Settings → Pair device.<br>
+          3. Enter the pairing code shown here: <strong>8472-K</strong>
+        </div>
+      </MpFormSection>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="pairDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="savePair">Pair device</v-btn>
+      </template>
+    </MpFormDrawer>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.retail-clickable-rows {
+  cursor: pointer;
+}
+
+.retail-fleet-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-14) var(--mp-space-16);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-component-card-radius);
+  background: var(--surface-primary);
+
+  &__value {
+    font-size: var(--mp-fontSize-20);
+    font-weight: var(--mp-fontWeight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--on-surface);
+    line-height: 1;
+  }
+
+  &__label {
+    font-size: var(--mp-text-caption-fontSize);
+    color: var(--on-surface-muted);
+    margin-top: var(--mp-space-2);
+  }
+
+  &__dot {
+    flex-shrink: 0;
+  }
+}
+
+/* Drawer status band — soft tint + matching ink, like MpAlert's container pairs. */
+.register-detail-status {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-10) var(--mp-space-14);
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+
+  &--online { background: var(--pos-soft); color: var(--pos-ink); }
+  &--offline { background: var(--neg-soft); color: var(--neg-ink); }
+  &--syncing { background: var(--warn-soft); color: var(--warn-ink); }
+}
+
+.text-mono {
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-text-caption-fontSize);
+}
+</style>

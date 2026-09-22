@@ -1,0 +1,249 @@
+/**
+ * Theme-scoped aliases for borders and compact dashboard semantic tokens.
+ * Default matches light theme; dark overrides when Vuetify switches theme.
+ */
+:root {
+  /* Existing border aliases */
+  --mp-border-subtle: var(--mp-color-light-borderSubtle);
+  --mp-border-hairline: var(--mp-color-neutral-hairline);
+  --mp-border-table-row: var(--mp-color-light-borderTableRow);
+  --mp-border-table-header: var(--mp-color-light-borderTableHeader);
+  --mp-border-table-footer-divider: var(--mp-color-light-borderTableFooterDivider);
+  --mp-surface-tint: var(--mp-color-light-surfaceTint);
+  --mp-surface-warm: var(--mp-color-neutral-100);
+
+  /* Surface hierarchy */
+  --surface-canvas: var(--mp-color-light-background);
+  --surface-primary: var(--mp-color-light-surface);
+  --surface-secondary: var(--mp-color-light-surfaceVariant);
+  --surface-raised: var(--mp-color-light-surfaceRaised);
+  --surface-overlay: var(--mp-color-light-surfaceOverlay);
+  --surface-sunken: var(--mp-color-light-surfaceSunken);
+  --surface-interactive: var(--mp-color-light-interactiveDefault);
+  --surface-interactive-hover: var(--mp-color-light-interactiveHover);
+  --surface-interactive-active: var(--mp-color-light-interactiveActive);
+  --surface-interactive-selected: var(--mp-color-light-accent-cyan-selectedBackground);
+  --surface-interactive-disabled: var(--mp-color-light-interactiveDisabled);
+  --button-disabled: var(--mp-color-light-buttonDisabled);
+  --on-button-disabled: var(--mp-color-light-onButtonDisabled);
+  --scrim-overlay: var(--mp-color-light-scrim);
+
+  /* Text and icons.
+     P5.5: these now map 1:1 onto light-theme tokens that exist by name, matching
+     the dark block below. `textDisabled` and the icon roles used to be aliased
+     onto textMuted here because the light theme had no token for them, which made
+     disabled and muted text indistinguishable in light mode. */
+  --text-primary: var(--mp-color-light-textPrimary);
+  --text-secondary: var(--mp-color-light-textSecondary);
+  --text-muted: var(--mp-color-light-textMuted);
+  --text-disabled: var(--mp-color-light-textDisabled);
+  --icon-primary: var(--mp-color-light-iconPrimary);
+  --icon-secondary: var(--mp-color-light-iconSecondary);
+  --icon-disabled: var(--mp-color-light-iconDisabled);
+
+  /* P5.5 semantic pairing: the declared ink for the whole surface ladder.
+     Any element that paints a --surface-* fill states one of these as its color;
+     see scripts/check-contrast.mjs for the enforced pairs. */
+  --on-surface: var(--mp-color-light-onSurface);
+  --on-surface-muted: var(--mp-color-light-onSurfaceMuted);
+
+  /* Boundaries and focus */
+  --border-subtle: var(--mp-color-light-borderSubtle);
+  --border-default: var(--mp-color-light-border);
+  --border-strong: var(--mp-color-light-outline);
+  --border-hover: var(--mp-color-light-border);
+  --focus-ring: var(--mp-color-light-accent-cyan-focusRing);
+  --mp-border-subtle-hover: var(--border-hover);
+
+  /* Accent (default cyan) */
+  --accent-default: var(--mp-color-light-accent-cyan-default);
+  --accent-hover: var(--mp-color-light-accent-cyan-hover);
+  --accent-active: var(--mp-color-light-accent-cyan-active);
+  --accent-selected-bg: var(--mp-color-light-accent-cyan-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-light-accent-cyan-subtleBackground);
+  --accent-focus-ring: var(--mp-color-light-accent-cyan-focusRing);
+  --accent-on: var(--mp-color-light-accent-cyan-onAccent);
+  --accent-container: var(--mp-color-light-accent-cyan-container);
+  --accent-on-container: var(--mp-color-light-accent-cyan-onContainer);
+
+  /* Compatibility aliases — remove after the migration window.
+     WP-F5 (AUD-L01): --surface-1/-2, --hairline, --ink retired after the
+     mechanical rename to their semantic equivalents across src/. */
+  --surface-0: var(--surface-canvas);
+  --muted: var(--text-muted);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
+
+  /* Containers */
+  --primary-container: var(--accent-container);
+  --on-primary-container: var(--accent-on-container);
+
+  /* Semantic colors */
+  --pos: rgb(var(--v-theme-success));
+  --pos-soft: rgb(var(--v-theme-success-container));
+  --pos-ink: rgb(var(--v-theme-on-success-container));
+  --neg: rgb(var(--v-theme-error));
+  --neg-soft: rgb(var(--v-theme-error-container));
+  --neg-ink: rgb(var(--v-theme-on-error-container));
+  /* P5.5: the SOLID --pos/--neg fills had no ink counterpart, so anything painting
+     them had to inherit its text color. --*-ink pairs with the -soft container. */
+  --on-pos: rgb(var(--v-theme-on-success));
+  --on-neg: rgb(var(--v-theme-on-error));
+  /* P5.5: warning completes the semantic trio. It was missing, so the retail
+     widgets hardcoded #f59e0b/#b45309 and never flipped for dark theme. */
+  --warn: rgb(var(--v-theme-warning));
+  --warn-soft: rgb(var(--v-theme-warning-container));
+  --warn-ink: rgb(var(--v-theme-on-warning-container));
+  --on-warn: rgb(var(--v-theme-on-warning));
+
+  /* Elevation */
+  --elevation-raised: var(--mp-shadow-sm);
+  --elevation-overlay: var(--mp-shadow-md);
+  --elevation-modal: var(--mp-shadow-lg);
+  /* Filled buttons carry a top-edge sheen plus a tinted lift on light surfaces.
+     The lift's geometry stays inline: its colour is the live accent preset
+     (a runtime CSS var), which tokens.json cannot express as one shadow value. */
+  --btn-flat-shadow:
+    var(--mp-shadow-buttonInset),
+    0 1px 3px rgba(var(--mp-rgb-color-light-accent-blue-focusRing), 0.24);
+
+  /* Radius — aliases only; every value resolves through tokens.json (P1-7). */
+  --r-pill: var(--mp-radius-full);
+  /* One card radius across the product (16px) — cards, sections, dialogs, and
+     ink panels all share it, so nothing reads mismatched surface-to-surface. */
+  --r-card: var(--mp-component-card-radius);
+  --r-section: var(--mp-component-card-radius);
+  --r-chip: var(--mp-component-chip-radius);
+
+  /* Motion */
+  --ease: var(--mp-motion-easing-standard);
+  --ease-exit: var(--mp-motion-easing-exit);
+  --dur-instant: var(--mp-motion-duration-instant);
+  --dur-fast: var(--mp-motion-duration-fast);
+  --dur-base: var(--mp-motion-duration-base);
+  --dur-slow: var(--mp-motion-duration-slow);
+  --dur-entrance: var(--mp-motion-duration-entrance);
+  --stagger-step: var(--mp-motion-stagger-step);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-light-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-light-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-light-inkPanel-border);
+}
+
+/* Bare theme class too: teleported roots (drawers/dialogs/menus) live outside
+   .v-application (some directly under <body>) but carry the theme class. */
+.v-application.v-theme--maropostDark,
+.v-theme--maropostDark {
+  --mp-border-subtle: var(--mp-color-dark-borderSubtle);
+  --mp-border-hairline: var(--mp-color-dark-borderSubtle);
+  --mp-border-table-row: var(--mp-color-dark-borderTableRow);
+  --mp-border-table-header: var(--mp-color-dark-borderTableHeader);
+  --mp-border-table-footer-divider: var(--mp-color-dark-borderTableFooterDivider);
+  --mp-surface-tint: var(--mp-color-dark-surfaceTint);
+  --mp-surface-warm: var(--mp-color-dark-surfaceVariant);
+  --mp-color-sidebar-bg: var(--mp-color-dark-background);
+  --mp-color-sidebar-surface: var(--mp-color-dark-surface);
+  --mp-color-sidebar-border: var(--mp-color-dark-borderSubtle);
+  --mp-color-sidebar-text: var(--mp-color-dark-textPrimary);
+  --mp-color-sidebar-textMuted: var(--mp-color-dark-textMuted);
+  --mp-color-sidebar-textFaint: var(--mp-color-dark-textMuted);
+  --mp-color-sidebar-hover: var(--mp-color-dark-accent-cyan-selectedBackground);
+
+  /* Surface hierarchy */
+  --surface-canvas: var(--mp-color-dark-background);
+  --surface-primary: var(--mp-color-dark-surface);
+  --surface-secondary: var(--mp-color-dark-surfaceVariant);
+  --surface-raised: var(--mp-color-dark-surfaceRaised);
+  --surface-overlay: var(--mp-color-dark-surfaceOverlay);
+  --surface-sunken: var(--mp-color-dark-surfaceSunken);
+  --surface-interactive: var(--mp-color-dark-interactiveDefault);
+  --surface-interactive-hover: var(--mp-color-dark-interactiveHover);
+  --surface-interactive-active: var(--mp-color-dark-interactiveActive);
+  --surface-interactive-selected: var(--mp-color-dark-accent-cyan-selectedBackground);
+  --surface-interactive-disabled: var(--mp-color-dark-interactiveDisabled);
+  --button-disabled: var(--mp-color-dark-buttonDisabled);
+  --on-button-disabled: var(--mp-color-dark-onButtonDisabled);
+  --scrim-overlay: var(--mp-color-dark-scrim);
+
+  /* Text and icons */
+  --text-primary: var(--mp-color-dark-textPrimary);
+  --text-secondary: var(--mp-color-dark-textSecondary);
+  --text-muted: var(--mp-color-dark-textMuted);
+  --text-disabled: var(--mp-color-dark-textDisabled);
+  --icon-primary: var(--mp-color-dark-iconPrimary);
+  --icon-secondary: var(--mp-color-dark-iconSecondary);
+  --icon-disabled: var(--mp-color-dark-iconDisabled);
+
+  /* P5.5 semantic pairing — see the light block for the contract. */
+  --on-surface: var(--mp-color-dark-onSurface);
+  --on-surface-muted: var(--mp-color-dark-onSurfaceMuted);
+
+  /* Boundaries and focus */
+  --border-subtle: var(--mp-color-dark-borderSubtle);
+  --border-default: var(--mp-color-dark-border);
+  --border-strong: var(--mp-color-dark-borderStrong);
+  --border-hover: var(--mp-color-dark-borderHover);
+  --focus-ring: var(--mp-color-dark-focusRing);
+  --mp-border-subtle-hover: var(--border-hover);
+
+  /* Accent (default cyan) */
+  --accent-default: var(--mp-color-dark-accent-cyan-default);
+  --accent-hover: var(--mp-color-dark-accent-cyan-hover);
+  --accent-active: var(--mp-color-dark-accent-cyan-active);
+  --accent-selected-bg: var(--mp-color-dark-accent-cyan-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-dark-accent-cyan-subtleBackground);
+  --accent-focus-ring: var(--mp-color-dark-accent-cyan-focusRing);
+  --accent-on: var(--mp-color-dark-accent-cyan-onAccent);
+  --accent-container: var(--mp-color-dark-accent-cyan-container);
+  --accent-on-container: var(--mp-color-dark-accent-cyan-onContainer);
+
+  /* Compatibility aliases — remove after the migration window.
+     WP-F5 (AUD-L01): --surface-1/-2, --hairline, --ink retired after the
+     mechanical rename to their semantic equivalents across src/. */
+  --surface-0: var(--surface-canvas);
+  --muted: var(--text-muted);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-on-container);
+  --accent-soft: var(--accent-subtle-bg);
+
+  --primary-container: var(--accent-container);
+  --on-primary-container: var(--accent-on-container);
+
+  /* Semantic colors */
+  --pos: rgb(var(--v-theme-success));
+  --pos-soft: rgb(var(--v-theme-success-container));
+  --pos-ink: rgb(var(--v-theme-on-success-container));
+  --neg: rgb(var(--v-theme-error));
+  --neg-soft: rgb(var(--v-theme-error-container));
+  --neg-ink: rgb(var(--v-theme-on-error-container));
+  /* P5.5: the SOLID --pos/--neg fills had no ink counterpart, so anything painting
+     them had to inherit its text color. --*-ink pairs with the -soft container. */
+  --on-pos: rgb(var(--v-theme-on-success));
+  --on-neg: rgb(var(--v-theme-on-error));
+  /* P5.5: warning completes the semantic trio. It was missing, so the retail
+     widgets hardcoded #f59e0b/#b45309 and never flipped for dark theme. */
+  --warn: rgb(var(--v-theme-warning));
+  --warn-soft: rgb(var(--v-theme-warning-container));
+  --warn-ink: rgb(var(--v-theme-on-warning-container));
+  --on-warn: rgb(var(--v-theme-on-warning));
+
+  /* Elevation */
+  --elevation-raised: var(--mp-shadow-dark-sm);
+  --elevation-overlay: var(--mp-shadow-dark-md);
+  --elevation-modal: var(--mp-shadow-dark-lg);
+  /* No white sheen on dark: a light inset reads as a glow, not elevation. */
+  --btn-flat-shadow: var(--elevation-raised);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-dark-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-dark-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-dark-inkPanel-border);
+}

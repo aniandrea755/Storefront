@@ -1,0 +1,70 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+dist-storybook
+storybook-static
+*.local
+.env
+.env.*
+!.env.example
+
+
+# Coverage
+coverage
+
+# Vercel
+.vercel
+
+# Figma cache & pnpm store (large binary/JSON files)
+.cache/
+.pnpm-store/
+
+# Cursor / Claude agent worktree mirrors (large; regenerate locally)
+.claude/worktrees/
+
+# Retail Cloud POS APK (204 MB binary — distribute out-of-band, not via git)
+Retail Cloud POS APK/
+
+# UAT parity crawl screenshots (live-product captures — keep on disk, never commit)
+maropost-screenshots/uat/
+
+# Ad-hoc Playwright CLI inspection artifacts (scratch screenshots/snapshots)
+output/playwright/
+.playwright-cli/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env*.local
+
+# Trailer build artifacts (video/audio renders)
+trailer-build/
+
+# Fly-through source screens for the demo-only /reel/fly route
+public/trailer-screens/
+
+# Handoff snapshots and exported archives. These are point-in-time copies of the
+# repo (or of adjacent prototypes) kept on disk for handover; none of them are on
+# the build graph — vite, tsconfig, and .storybook/main.ts all scope to src/ only.
+# Ignored so they stop showing up in `git status` and can't be swept into a
+# `git add .`. Delete them from disk when the handover they belong to is done.
+maropost-ds-handoff/
+keycloak-orb-update/
+keycloak-orb-update 2/
+*.zip

@@ -1,0 +1,1555 @@
+import { computed, inject, ref, unref, type InjectionKey, type Ref } from 'vue'
+import { useTheme } from 'vuetify'
+import type { ApexOptions } from 'apexcharts'
+
+import {
+  mp_color_chart_dark_axisLabel,
+  mp_color_chart_dark_grid,
+  mp_color_chart_dark_legendLabel,
+  mp_color_chart_dark_ocean_axis1,
+  mp_color_chart_dark_ocean_axis2,
+  mp_color_chart_dark_ocean_axis3,
+  mp_color_chart_dark_ocean_axis4,
+  mp_color_chart_dark_ocean_axis5,
+  mp_color_chart_dark_ocean_series1,
+  mp_color_chart_dark_ocean_series2,
+  mp_color_chart_dark_ocean_series3,
+  mp_color_chart_dark_ocean_series4,
+  mp_color_chart_dark_ocean_series5,
+  mp_color_chart_dark_ocean_series6,
+  mp_color_chart_dark_social_axis1,
+  mp_color_chart_dark_social_axis2,
+  mp_color_chart_dark_social_axis3,
+  mp_color_chart_dark_social_axis4,
+  mp_color_chart_dark_social_axis5,
+  mp_color_chart_dark_social_series1,
+  mp_color_chart_dark_social_series2,
+  mp_color_chart_dark_social_series3,
+  mp_color_chart_dark_social_series4,
+  mp_color_chart_dark_social_series5,
+  mp_color_chart_dark_social_series6,
+  mp_color_chart_dark_tooltipBackground,
+  mp_color_chart_dark_tooltipBorder,
+  mp_color_chart_dark_tooltipText,
+  mp_color_chart_light_axisLabel,
+  mp_color_chart_light_grid,
+  mp_color_chart_light_legendLabel,
+  mp_color_chart_light_ocean_axis1,
+  mp_color_chart_light_ocean_axis2,
+  mp_color_chart_light_ocean_axis3,
+  mp_color_chart_light_ocean_axis4,
+  mp_color_chart_light_ocean_axis5,
+  mp_color_chart_light_ocean_series1,
+  mp_color_chart_light_ocean_series2,
+  mp_color_chart_light_ocean_series3,
+  mp_color_chart_light_ocean_series4,
+  mp_color_chart_light_ocean_series5,
+  mp_color_chart_light_ocean_series6,
+  mp_color_chart_light_grayBlue_axis1,
+  mp_color_chart_light_grayBlue_axis2,
+  mp_color_chart_light_grayBlue_axis3,
+  mp_color_chart_light_grayBlue_axis4,
+  mp_color_chart_light_grayBlue_axis5,
+  mp_color_chart_light_grayBlue_comparison,
+  mp_color_chart_light_grayBlue_negative,
+  mp_color_chart_light_grayBlue_neutral,
+  mp_color_chart_light_grayBlue_positive,
+  mp_color_chart_light_grayBlue_series1,
+  mp_color_chart_light_grayBlue_series2,
+  mp_color_chart_light_grayBlue_series3,
+  mp_color_chart_light_grayBlue_series4,
+  mp_color_chart_light_grayBlue_series5,
+  mp_color_chart_light_grayBlue_series6,
+  mp_color_chart_light_grayBlue_warning,
+  mp_color_chart_dark_grayBlue_axis1,
+  mp_color_chart_dark_grayBlue_axis2,
+  mp_color_chart_dark_grayBlue_axis3,
+  mp_color_chart_dark_grayBlue_axis4,
+  mp_color_chart_dark_grayBlue_axis5,
+  mp_color_chart_dark_grayBlue_comparison,
+  mp_color_chart_dark_grayBlue_series1,
+  mp_color_chart_dark_grayBlue_series2,
+  mp_color_chart_dark_grayBlue_series3,
+  mp_color_chart_dark_grayBlue_series4,
+  mp_color_chart_dark_grayBlue_series5,
+  mp_color_chart_dark_grayBlue_series6,
+  mp_color_chart_light_merchant_axis1,
+  mp_color_chart_light_merchant_axis2,
+  mp_color_chart_light_merchant_axis3,
+  mp_color_chart_light_merchant_axis4,
+  mp_color_chart_light_merchant_axis5,
+  mp_color_chart_light_merchant_comparison,
+  mp_color_chart_light_merchant_negative,
+  mp_color_chart_light_merchant_neutral,
+  mp_color_chart_light_merchant_positive,
+  mp_color_chart_light_merchant_series1,
+  mp_color_chart_light_merchant_series2,
+  mp_color_chart_light_merchant_series3,
+  mp_color_chart_light_merchant_series4,
+  mp_color_chart_light_merchant_series5,
+  mp_color_chart_light_merchant_series6,
+  mp_color_chart_light_merchant_warning,
+  mp_color_chart_dark_merchant_axis1,
+  mp_color_chart_dark_merchant_axis2,
+  mp_color_chart_dark_merchant_axis3,
+  mp_color_chart_dark_merchant_axis4,
+  mp_color_chart_dark_merchant_axis5,
+  mp_color_chart_dark_merchant_comparison,
+  mp_color_chart_dark_merchant_series1,
+  mp_color_chart_dark_merchant_series2,
+  mp_color_chart_dark_merchant_series3,
+  mp_color_chart_dark_merchant_series4,
+  mp_color_chart_dark_merchant_series5,
+  mp_color_chart_dark_merchant_series6,
+  mp_color_chart_light_shopify_axis1,
+  mp_color_chart_light_shopify_axis2,
+  mp_color_chart_light_shopify_axis3,
+  mp_color_chart_light_shopify_axis4,
+  mp_color_chart_light_shopify_axis5,
+  mp_color_chart_light_shopify_axisLabel,
+  mp_color_chart_light_shopify_comparison,
+  mp_color_chart_light_shopify_crosshair,
+  mp_color_chart_light_shopify_grid,
+  mp_color_chart_light_shopify_legendLabel,
+  mp_color_chart_light_shopify_negative,
+  mp_color_chart_light_shopify_neutral,
+  mp_color_chart_light_shopify_positive,
+  mp_color_chart_light_shopify_series1,
+  mp_color_chart_light_shopify_series2,
+  mp_color_chart_light_shopify_series3,
+  mp_color_chart_light_shopify_series4,
+  mp_color_chart_light_shopify_series5,
+  mp_color_chart_light_shopify_series6,
+  mp_color_chart_light_shopify_tooltipBackground,
+  mp_color_chart_light_shopify_tooltipText,
+  mp_color_chart_light_shopify_warning,
+  mp_color_chart_dark_shopify_axis1,
+  mp_color_chart_dark_shopify_axis2,
+  mp_color_chart_dark_shopify_axis3,
+  mp_color_chart_dark_shopify_axis4,
+  mp_color_chart_dark_shopify_axis5,
+  mp_color_chart_dark_shopify_comparison,
+  mp_color_chart_dark_shopify_series1,
+  mp_color_chart_dark_shopify_series2,
+  mp_color_chart_dark_shopify_series3,
+  mp_color_chart_dark_shopify_series4,
+  mp_color_chart_dark_shopify_series5,
+  mp_color_chart_dark_shopify_series6,
+  mp_color_chart_light_bloomreach_axis1,
+  mp_color_chart_light_bloomreach_axis2,
+  mp_color_chart_light_bloomreach_axis3,
+  mp_color_chart_light_bloomreach_axis4,
+  mp_color_chart_light_bloomreach_axis5,
+  mp_color_chart_light_bloomreach_axisLabel,
+  mp_color_chart_light_bloomreach_comparison,
+  mp_color_chart_light_bloomreach_crosshair,
+  mp_color_chart_light_bloomreach_grid,
+  mp_color_chart_light_bloomreach_legendLabel,
+  mp_color_chart_light_bloomreach_negative,
+  mp_color_chart_light_bloomreach_neutral,
+  mp_color_chart_light_bloomreach_positive,
+  mp_color_chart_light_bloomreach_series1,
+  mp_color_chart_light_bloomreach_series2,
+  mp_color_chart_light_bloomreach_series3,
+  mp_color_chart_light_bloomreach_series4,
+  mp_color_chart_light_bloomreach_series5,
+  mp_color_chart_light_bloomreach_series6,
+  mp_color_chart_light_bloomreach_tooltipBackground,
+  mp_color_chart_light_bloomreach_tooltipText,
+  mp_color_chart_light_bloomreach_warning,
+  mp_color_chart_dark_bloomreach_axis1,
+  mp_color_chart_dark_bloomreach_axis2,
+  mp_color_chart_dark_bloomreach_axis3,
+  mp_color_chart_dark_bloomreach_axis4,
+  mp_color_chart_dark_bloomreach_axis5,
+  mp_color_chart_dark_bloomreach_comparison,
+  mp_color_chart_dark_bloomreach_series1,
+  mp_color_chart_dark_bloomreach_series2,
+  mp_color_chart_dark_bloomreach_series3,
+  mp_color_chart_dark_bloomreach_series4,
+  mp_color_chart_dark_bloomreach_series5,
+  mp_color_chart_dark_bloomreach_series6,
+  mp_color_chart_light_stripe_axis1,
+  mp_color_chart_light_stripe_axis2,
+  mp_color_chart_light_stripe_axis3,
+  mp_color_chart_light_stripe_axis4,
+  mp_color_chart_light_stripe_axis5,
+  mp_color_chart_light_stripe_axisLabel,
+  mp_color_chart_light_stripe_comparison,
+  mp_color_chart_light_stripe_crosshair,
+  mp_color_chart_light_stripe_grid,
+  mp_color_chart_light_stripe_legendLabel,
+  mp_color_chart_light_stripe_negative,
+  mp_color_chart_light_stripe_neutral,
+  mp_color_chart_light_stripe_positive,
+  mp_color_chart_light_stripe_series1,
+  mp_color_chart_light_stripe_series2,
+  mp_color_chart_light_stripe_series3,
+  mp_color_chart_light_stripe_series4,
+  mp_color_chart_light_stripe_series5,
+  mp_color_chart_light_stripe_series6,
+  mp_color_chart_light_stripe_tooltipBackground,
+  mp_color_chart_light_stripe_tooltipText,
+  mp_color_chart_light_stripe_warning,
+  mp_color_chart_dark_stripe_axis1,
+  mp_color_chart_dark_stripe_axis2,
+  mp_color_chart_dark_stripe_axis3,
+  mp_color_chart_dark_stripe_axis4,
+  mp_color_chart_dark_stripe_axis5,
+  mp_color_chart_dark_stripe_comparison,
+  mp_color_chart_dark_stripe_series1,
+  mp_color_chart_dark_stripe_series2,
+  mp_color_chart_dark_stripe_series3,
+  mp_color_chart_dark_stripe_series4,
+  mp_color_chart_dark_stripe_series5,
+  mp_color_chart_dark_stripe_series6,
+  mp_color_chart_light_grayBlueGold_axis1,
+  mp_color_chart_light_grayBlueGold_axis2,
+  mp_color_chart_light_grayBlueGold_axis3,
+  mp_color_chart_light_grayBlueGold_axis4,
+  mp_color_chart_light_grayBlueGold_axis5,
+  mp_color_chart_light_grayBlueGold_series1,
+  mp_color_chart_light_grayBlueGold_series2,
+  mp_color_chart_light_grayBlueGold_series3,
+  mp_color_chart_light_grayBlueGold_series4,
+  mp_color_chart_light_grayBlueGold_series5,
+  mp_color_chart_light_grayBlueGold_series6,
+  mp_color_chart_dark_grayBlueGold_axis1,
+  mp_color_chart_dark_grayBlueGold_axis2,
+  mp_color_chart_dark_grayBlueGold_axis3,
+  mp_color_chart_dark_grayBlueGold_axis4,
+  mp_color_chart_dark_grayBlueGold_axis5,
+  mp_color_chart_dark_grayBlueGold_series1,
+  mp_color_chart_dark_grayBlueGold_series2,
+  mp_color_chart_dark_grayBlueGold_series3,
+  mp_color_chart_dark_grayBlueGold_series4,
+  mp_color_chart_dark_grayBlueGold_series5,
+  mp_color_chart_dark_grayBlueGold_series6,
+  mp_color_chart_light_social_axis1,
+  mp_color_chart_light_social_axis2,
+  mp_color_chart_light_social_axis3,
+  mp_color_chart_light_social_axis4,
+  mp_color_chart_light_social_axis5,
+  mp_color_chart_light_social_series1,
+  mp_color_chart_light_social_series2,
+  mp_color_chart_light_social_series3,
+  mp_color_chart_light_social_series4,
+  mp_color_chart_light_social_series5,
+  mp_color_chart_light_social_series6,
+  mp_color_chart_light_tooltipBackground,
+  mp_color_chart_light_tooltipBorder,
+  mp_color_chart_light_tooltipText,
+  mp_color_chart_heatmapInk,
+  mp_color_chart_heatmapInkStrong,
+} from '@/design-tokens/generated/tokens'
+
+/** Selectable chart themes (switchable via the `?chart=` URL param, see App.vue). */
+export type ChartPalette =
+  | 'grayBlue'
+  | 'grayBlueGold'
+  | 'social'
+  | 'ocean'
+  /** The middle tier between flat and gradient — Shopify-style solid marks with a
+      soft same-hue fade, gray secondary, dotted previous period (Ross, Sept 2026). */
+  | 'merchant'
+  /** 1:1 port of the Shopify admin's Polaris Viz Light theme (marks + chrome). */
+  | 'shopify'
+  /** `shopify` marks plus the Shopify admin page + card chrome (`skin: 'polaris'`), dashboards only. */
+  | 'shopifyAdmin'
+  /** Bloomreach Engagement look (navy / slate / purple) with Ocean cyan in place of their yellow; chart marks + card chrome. */
+  | 'bloomreach'
+  /** Stripe Dashboard look (hairlines, min/max axes, no legend) on Maropost primary; chart marks + card chrome. */
+  | 'stripe'
+  /** Gradient exploration variants — each base palette with the emboss/duotone
+      treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
+  | 'socialGradient'
+  | 'grayBlueGradient'
+  | 'grayBlueGoldGradient'
+  | 'oceanGradient'
+
+export type ChartMode = 'light' | 'dark'
+
+export interface ChartChrome {
+  axisLabel: string
+  legendLabel: string
+  grid: string
+  tooltipTheme: 'light' | 'dark'
+  tooltipBackground: string
+  tooltipText: string
+  tooltipBorder: string
+}
+
+/**
+ * Full visual-system description for a chart theme. The colour options declare
+ * one; `ocean` leaves `ChartTheme.treatment` undefined and keeps its existing
+ * `gradientMarks` branches verbatim.
+ */
+export interface ChartTreatment {
+  stroke: {
+    curve: 'smooth' | 'straight' | 'monotoneCubic'
+    /** Lead/only series stroke width. */
+    width: number
+    /** Non-lead series in a multi-series chart. */
+    companionWidth: number
+    /** Dash for non-lead (non-comparison) series; 0 = solid. */
+    companionDash: number
+    /** Single-series line strokes run through the axis ramp. */
+    gradientLine: boolean
+    /** Apex stroke.lineCap; 'round' turns a short comparison dash into dots. */
+    lineCap?: 'butt' | 'round'
+  }
+  comparison: {
+    color?: string
+    dash: number
+    fillOpacity: number
+    /** Raw SVG stroke-dasharray patched onto the comparison paths after render —
+        Apex accepts one number per series, so a Polaris "0.1 4" dot needs this. */
+    dashPattern?: string
+  }
+  area: { fill: 'gradient' | 'solid'; opacityFrom: number; opacityTo: number }
+  bar: {
+    radius: number
+    columnWidthSingle: string
+    columnWidthGrouped: string
+    /** 'soft-gradient' = same hue, opacity 1 → 0.72 down the bar; no hue shift, no gloss. */
+    fill: 'solid' | 'tint-gradient' | 'axis-gradient' | 'soft-gradient'
+    floatingLabels: boolean
+  }
+  grid: { show: boolean; dashArray: number; xLines: boolean; yLines: boolean; color?: string }
+  axes: {
+    yLabelsOnTimeseries: boolean
+    labelFontSize?: number
+    labelFontWeight?: number
+    /** Case of the compact k/m/b suffix on the y-axis ("$3k" vs Polaris's "$3K"). */
+    compactUnitCase?: 'lower' | 'upper'
+    /** 'ends' keeps only the first and last category label (Stripe's "3 Dec … Today"). */
+    xLabels?: 'all' | 'ends'
+    /** Apex yaxis.tickAmount; 1 = min and max only. */
+    yTickAmount?: number
+    /** Draw the x-axis line (the only rule Stripe keeps when gridlines are off). */
+    baseline?: boolean
+  }
+  crosshair: { show: boolean; dash: number; color?: string }
+  markers: { hoverSize: number; lastPoint: boolean }
+  legend: {
+    markerShape: 'square' | 'circle' | 'line'
+    markerSize: number
+    hoverHighlight: boolean
+    position?: 'top' | 'bottom'
+    align?: 'left' | 'center' | 'right'
+    fontSize?: number
+    /** Custom legend markers: a 12×2 line per series, three dots for the comparison series. */
+    comparisonMarker?: 'dots'
+    /** false hides the legend entirely (Stripe); default shows it. */
+    show?: boolean
+  }
+  donut: {
+    size: string
+    fill: 'solid' | 'gradient'
+    strokeWidth: number
+    showDataLabels: boolean
+    /** Apex plotOptions.pie.donut corner radius / slice gap; widgets default to 8 / 4. */
+    cornerRadius?: number
+    spacing?: number
+  }
+  /** Hand-rolled SVG family (DtGauge / DtRingDonut / stacked bar). */
+  svg: { shade: 'flat' | 'tint' }
+  kpiSpark: { color?: string; fillOpacity: number }
+  effects: { dropShadow: boolean; gloss?: boolean }
+  states: { hoverFilter: 'none' | 'lighten' | 'darken'; hoverFilterValue: number; dimmedOpacity: number }
+  posNeg: { positive: string; negative: string; warning: string; neutral: string }
+  /** Optional ramp overrides; unset ramps derive from `series` / `axis`. */
+  ramps?: {
+    stack?: string[]
+    barGradient?: string
+    funnelStops?: { offset: string; color: string }[]
+    trendCurrent?: string
+    trendPrevious?: string
+  }
+}
+
+export interface ChartTheme {
+  label: string
+  /** 6 legend/series colors, slot order = adjacency-validated */
+  series: string[]
+  /** Ordered gradient stops (deep -> bright) that gradient marks run through */
+  axis: string[]
+  /** Hyper-style gradient mark treatment on/off */
+  gradientMarks: boolean
+  /** Polaris-style flat marks: solid bars/slices, no accent swap, hover-only markers. */
+  flatMarks?: boolean
+  /** Stroke + legend dot for `isComparison` series (Shopify's dashed previous period). */
+  comparisonColor?: string
+  chrome: ChartChrome
+  /**
+   * Exploration options only. When set, widgets read every visual decision from
+   * here instead of the legacy `gradientMarks`/`flatMarks` branches.
+   */
+  treatment?: ChartTreatment
+  /**
+   * The option also restyles the dashboard page and cards. Read by
+   * DashboardChartWidget (headline) and DashboardGrid (gap); the CSS side keys
+   * off the mirrored `<html data-chart>` in shopify-admin-skin.css.
+   */
+  skin?: 'polaris' | 'bloomreach' | 'stripe'
+}
+
+/**
+ * Neutral starting point for option treatments — each option states deltas only via
+ * `makeTreatment`. Never consumed on its own (no theme ships BASE_TREATMENT as-is).
+ */
+const BASE_TREATMENT: ChartTreatment = {
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { dash: 5, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.2, opacityTo: 0.02 },
+  bar: {
+    radius: 4,
+    columnWidthSingle: '45%',
+    columnWidthGrouped: '68%',
+    fill: 'solid',
+    floatingLabels: false,
+  },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 4, lastPoint: false },
+  legend: { markerShape: 'square', markerSize: 8, hoverHighlight: true },
+  donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.16 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.35 },
+  posNeg: { positive: '#1B7A46', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+}
+
+type TreatmentOverrides = {
+  [K in keyof ChartTreatment]?: Partial<NonNullable<ChartTreatment[K]>>
+}
+
+/**
+ * Shallow-per-section merge onto BASE_TREATMENT (every treatment section is a flat
+ * object, so one level of merge is exactly the depth needed).
+ */
+export function makeTreatment(overrides: TreatmentOverrides = {}): ChartTreatment {
+  const merged: Record<string, unknown> = { ...BASE_TREATMENT }
+  for (const key of Object.keys(overrides) as (keyof ChartTreatment)[]) {
+    const patch = overrides[key] as Record<string, unknown> | undefined
+    if (!patch) continue
+    const base = BASE_TREATMENT[key] as Record<string, unknown> | undefined
+    merged[key] = { ...(base ?? {}), ...patch }
+  }
+  return merged as unknown as ChartTreatment
+}
+
+const LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_axisLabel,
+  legendLabel: mp_color_chart_light_legendLabel,
+  grid: mp_color_chart_light_grid,
+  tooltipTheme: 'light',
+  tooltipBackground: mp_color_chart_light_tooltipBackground,
+  tooltipText: mp_color_chart_light_tooltipText,
+  tooltipBorder: mp_color_chart_light_tooltipBorder,
+}
+
+const DARK_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_dark_axisLabel,
+  legendLabel: mp_color_chart_dark_legendLabel,
+  grid: mp_color_chart_dark_grid,
+  tooltipTheme: 'dark',
+  tooltipBackground: mp_color_chart_dark_tooltipBackground,
+  tooltipText: mp_color_chart_dark_tooltipText,
+  tooltipBorder: mp_color_chart_dark_tooltipBorder,
+}
+
+/** Option themes never share a chrome object with the legacy themes. */
+function cloneChrome(chrome: ChartChrome, overrides: Partial<ChartChrome> = {}): ChartChrome {
+  return { ...chrome, ...overrides }
+}
+
+/** Ocean-style line treatment shared by every color-only option — smooth 3px
+    primary stroke, dashed comparison line, soft gradient wash. Only the
+    comparison (secondary/previous-period) colour varies per theme. */
+const oceanLineTreatment = (comparison: string) => makeTreatment({
+  stroke: { curve: 'smooth', width: 3, companionWidth: 2, companionDash: 5, gradientLine: false },
+  comparison: { color: comparison, dash: 5, fillOpacity: 0.18 },
+  area: { fill: 'gradient', opacityFrom: 0.25, opacityTo: 0.02 },
+  bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 4, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 4 },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  // Rounded donut geometry lives in the widgets (Apex 6 native
+  // plotOptions.pie.borderRadius + spacing) — no stroke needed for the gaps.
+  donut: { size: '68%', fill: 'solid', strokeWidth: 0, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.1 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_grayBlue_positive,
+    negative: mp_color_chart_light_grayBlue_negative,
+    warning: mp_color_chart_light_grayBlue_warning,
+    neutral: mp_color_chart_light_grayBlue_neutral,
+  },
+})
+
+// Per-option instances: gray stays the grayBlue identity; every other option's
+// secondary series takes that theme's own series-2 hue.
+const GRAY_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
+const GRAY_BLUE_GOLD_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlueGold_series2)
+const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+// Own instance so the gradient exploration can retune stroke/bar/donut without
+// touching `social`. Identical values today — the two render the same.
+const SOCIAL_GRADIENT_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+
+/**
+ * The middle tier Ross asked for (Sept 2026): neither flat nor glossy. Solid
+ * marks with a soft same-hue fade down each bar, a light area wash under the
+ * line, a thick solid ring, solid faint y-gridlines and a dotted gray previous
+ * period — the Shopify admin grammar. No duotone companion anywhere.
+ */
+const MERCHANT_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false, lineCap: 'round' },
+  comparison: { color: mp_color_chart_light_merchant_comparison, dash: 3, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.28, opacityTo: 0 },
+  bar: { radius: 3, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'soft-gradient', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '72%', fill: 'solid', strokeWidth: 0, showDataLabels: false },
+  svg: { shade: 'tint' },
+  kpiSpark: { fillOpacity: 0.14 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_merchant_positive,
+    negative: mp_color_chart_light_merchant_negative,
+    warning: mp_color_chart_light_merchant_warning,
+    neutral: mp_color_chart_light_merchant_neutral,
+  },
+})
+
+/**
+ * 1:1 port of the Shopify admin's chart look, read from the Polaris Viz source
+ * (LIGHT_THEME + constants): 2px round-capped line, area at ≈0.06 fading to 0,
+ * previous period as a gray "0.1 4" dotted line with no area, hover point r5,
+ * gray-20 horizontal grid, gray-40 crosshair, 11px gray-100 labels, bottom-left
+ * legend with line/dots markers, bars radius 3, donut ring ≈ height/10 with
+ * 2px corners. Only Apex-imposed deviation: 'smooth' stands in for
+ * Polaris's curveStepRounded.
+ */
+const SHOPIFY_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false, lineCap: 'round' },
+  comparison: { color: mp_color_chart_light_shopify_comparison, dash: 4, dashPattern: '0.1 4', fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.07, opacityTo: 0 },
+  bar: { radius: 3, columnWidthSingle: '60%', columnWidthGrouped: '80%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: mp_color_chart_light_shopify_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 11, labelFontWeight: 400, compactUnitCase: 'upper' },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_shopify_crosshair },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'line', markerSize: 12, hoverHighlight: true, position: 'bottom', align: 'left', fontSize: 11, comparisonMarker: 'dots' },
+  donut: { size: '77%', fill: 'solid', strokeWidth: 0, showDataLabels: false, cornerRadius: 2, spacing: 4 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.2 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
+  posNeg: {
+    positive: mp_color_chart_light_shopify_positive,
+    negative: mp_color_chart_light_shopify_negative,
+    warning: mp_color_chart_light_shopify_warning,
+    neutral: mp_color_chart_light_shopify_neutral,
+  },
+})
+
+/** Polaris Viz Light chrome: gray-100 labels, gray-20 grid, white tooltip with gray-160 text. */
+const SHOPIFY_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_shopify_axisLabel,
+  legendLabel: mp_color_chart_light_shopify_legendLabel,
+  grid: mp_color_chart_light_shopify_grid,
+  tooltipTheme: 'light',
+  tooltipBackground: mp_color_chart_light_shopify_tooltipBackground,
+  tooltipText: mp_color_chart_light_shopify_tooltipText,
+  tooltipBorder: 'transparent',
+}
+
+/**
+ * Turn any base treatment into its gradient/emboss variant: bars route into the
+ * gloss branch ('solid' early-returns before it in DashboardChartWidget's
+ * treatmentFill, so any gradient fill value works), donut slices take the
+ * luminous band sweep, and `gloss` switches every widget's duotone recipes on.
+ * No Apex dropShadow: the gradient carries the depth, and shadows on a filled
+ * ring read as a sticker halo (P9 critique).
+ */
+const embossTreatment = (base: ChartTreatment): ChartTreatment => ({
+  ...base,
+  bar: { ...base.bar, fill: 'tint-gradient' },
+  donut: { ...base.donut, fill: 'gradient' },
+  effects: { dropShadow: false, gloss: true },
+})
+
+export const SOCIAL_GRADIENT_EMBOSS_TREATMENT = embossTreatment(SOCIAL_GRADIENT_TREATMENT)
+const GRAY_BLUE_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_TREATMENT)
+const GRAY_BLUE_GOLD_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_GOLD_TREATMENT)
+// Ocean ships without a treatment (legacy Hyper gradientMarks branches), so its
+// gradient variant starts from the standard ocean-line base.
+const OCEAN_GRADIENT_TREATMENT = embossTreatment(oceanLineTreatment(mp_color_chart_light_ocean_series2))
+
+
+/**
+ * Mode-aware chart themes. Each palette carries light and dark series/axis arrays
+ * sourced from generated tokens; chrome (labels, grid, tooltip) is mode-specific.
+ */
+/** `shopify` light/dark, hoisted so `shopifyAdmin` can reuse them verbatim. */
+const SHOPIFY_LIGHT: ChartTheme = {
+  label: 'Shopify (Polaris Viz)',
+  series: [
+    mp_color_chart_light_shopify_series1,
+    mp_color_chart_light_shopify_series2,
+    mp_color_chart_light_shopify_series3,
+    mp_color_chart_light_shopify_series4,
+    mp_color_chart_light_shopify_series5,
+    mp_color_chart_light_shopify_series6,
+  ],
+  axis: [
+    mp_color_chart_light_shopify_axis1,
+    mp_color_chart_light_shopify_axis2,
+    mp_color_chart_light_shopify_axis3,
+    mp_color_chart_light_shopify_axis4,
+    mp_color_chart_light_shopify_axis5,
+  ],
+  gradientMarks: false,
+  comparisonColor: mp_color_chart_light_shopify_comparison,
+  chrome: cloneChrome(SHOPIFY_LIGHT_CHROME),
+  treatment: SHOPIFY_TREATMENT,
+}
+// PROVISIONAL — light-only review; Polaris Viz ships a DARK_THEME if dark tuning is wanted
+const SHOPIFY_DARK: ChartTheme = {
+  label: 'Shopify (Polaris Viz)',
+  series: [
+    mp_color_chart_dark_shopify_series1,
+    mp_color_chart_dark_shopify_series2,
+    mp_color_chart_dark_shopify_series3,
+    mp_color_chart_dark_shopify_series4,
+    mp_color_chart_dark_shopify_series5,
+    mp_color_chart_dark_shopify_series6,
+  ],
+  axis: [
+    mp_color_chart_dark_shopify_axis1,
+    mp_color_chart_dark_shopify_axis2,
+    mp_color_chart_dark_shopify_axis3,
+    mp_color_chart_dark_shopify_axis4,
+    mp_color_chart_dark_shopify_axis5,
+  ],
+  gradientMarks: false,
+  comparisonColor: mp_color_chart_dark_shopify_comparison,
+  chrome: cloneChrome(DARK_CHROME),
+  treatment: SHOPIFY_TREATMENT,
+}
+
+/**
+ * Bloomreach Engagement's analytics grammar (Project performance / Reports),
+ * read from their public docs: 2px straight-segment lines with no area, flat
+ * bars with value labels, solid light gridlines, bottom-centre legend, navy
+ * tooltip. Their yellow primary becomes Maropost's Ocean cyan; purple stays.
+ */
+const BLOOMREACH_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { color: mp_color_chart_light_bloomreach_comparison, dash: 5, fillOpacity: 0 },
+  area: { fill: 'solid', opacityFrom: 0, opacityTo: 0 },
+  bar: { radius: 2, columnWidthSingle: '55%', columnWidthGrouped: '75%', fill: 'solid', floatingLabels: true },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: mp_color_chart_light_bloomreach_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 12, labelFontWeight: 500, compactUnitCase: 'upper' },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_bloomreach_crosshair },
+  markers: { hoverSize: 5, lastPoint: false },
+  // Bloomreach legend previews are short lines; the comparison series gets the dotted preview.
+  legend: { markerShape: 'line', markerSize: 12, hoverHighlight: true, position: 'bottom', align: 'center', fontSize: 13, comparisonMarker: 'dots' },
+  donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false, cornerRadius: 0, spacing: 2 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_bloomreach_positive,
+    negative: mp_color_chart_light_bloomreach_negative,
+    warning: mp_color_chart_light_bloomreach_warning,
+    neutral: mp_color_chart_light_bloomreach_neutral,
+  },
+  ramps: {
+    funnelStops: [
+      { offset: '0%', color: mp_color_chart_light_bloomreach_series1 },
+      { offset: '100%', color: mp_color_chart_light_bloomreach_series4 },
+    ],
+  },
+})
+
+/** Bloomreach chrome: slate labels, light solid grid, navy tooltip with white text. */
+const BLOOMREACH_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_bloomreach_axisLabel,
+  legendLabel: mp_color_chart_light_bloomreach_legendLabel,
+  grid: mp_color_chart_light_bloomreach_grid,
+  tooltipTheme: 'dark',
+  tooltipBackground: mp_color_chart_light_bloomreach_tooltipBackground,
+  tooltipText: mp_color_chart_light_bloomreach_tooltipText,
+  tooltipBorder: 'transparent',
+}
+
+/**
+ * Stripe Dashboard's chart grammar ("Your overview"): a 1.5px straight line with
+ * no area, a thin lighter previous period, no gridlines but a baseline, y labels
+ * at min and max only, x labels at the ends only, no legend, white tooltip card.
+ * Stripe's indigo becomes Maropost primary; the orange / blue / green status
+ * companions stay.
+ */
+const STRIPE_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 1.5, companionWidth: 1.5, companionDash: 0, gradientLine: false },
+  comparison: { color: mp_color_chart_light_stripe_comparison, dash: 0, fillOpacity: 0 },
+  area: { fill: 'solid', opacityFrom: 0, opacityTo: 0 },
+  bar: { radius: 2, columnWidthSingle: '55%', columnWidthGrouped: '75%', fill: 'solid', floatingLabels: false },
+  grid: { show: false, dashArray: 0, xLines: false, yLines: false, color: mp_color_chart_light_stripe_grid },
+  axes: { yLabelsOnTimeseries: true, labelFontSize: 11, labelFontWeight: 400, compactUnitCase: 'upper', xLabels: 'ends', yTickAmount: 1, baseline: true },
+  crosshair: { show: true, dash: 0, color: mp_color_chart_light_stripe_crosshair },
+  markers: { hoverSize: 4, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true, show: false },
+  donut: { size: '70%', fill: 'solid', strokeWidth: 2, showDataLabels: false, cornerRadius: 0, spacing: 2 },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
+  posNeg: {
+    positive: mp_color_chart_light_stripe_positive,
+    negative: mp_color_chart_light_stripe_negative,
+    warning: mp_color_chart_light_stripe_warning,
+    neutral: mp_color_chart_light_stripe_neutral,
+  },
+})
+
+/** Stripe chrome: slate labels, hairline grid colour (used for the baseline), white tooltip. */
+const STRIPE_LIGHT_CHROME: ChartChrome = {
+  axisLabel: mp_color_chart_light_stripe_axisLabel,
+  legendLabel: mp_color_chart_light_stripe_legendLabel,
+  grid: mp_color_chart_light_stripe_grid,
+  tooltipTheme: 'light',
+  tooltipBackground: mp_color_chart_light_stripe_tooltipBackground,
+  tooltipText: mp_color_chart_light_stripe_tooltipText,
+  tooltipBorder: mp_color_chart_light_stripe_grid,
+}
+
+export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
+  ocean: {
+    light: {
+      label: 'Ocean',
+      series: [
+        mp_color_chart_light_ocean_series1,
+        mp_color_chart_light_ocean_series2,
+        mp_color_chart_light_ocean_series3,
+        mp_color_chart_light_ocean_series4,
+        mp_color_chart_light_ocean_series5,
+        mp_color_chart_light_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_light_ocean_axis1,
+        mp_color_chart_light_ocean_axis2,
+        mp_color_chart_light_ocean_axis3,
+        mp_color_chart_light_ocean_axis4,
+        mp_color_chart_light_ocean_axis5,
+      ],
+      gradientMarks: true,
+      chrome: LIGHT_CHROME,
+    },
+    dark: {
+      label: 'Ocean',
+      series: [
+        mp_color_chart_dark_ocean_series1,
+        mp_color_chart_dark_ocean_series2,
+        mp_color_chart_dark_ocean_series3,
+        mp_color_chart_dark_ocean_series4,
+        mp_color_chart_dark_ocean_series5,
+        mp_color_chart_dark_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_ocean_axis1,
+        mp_color_chart_dark_ocean_axis2,
+        mp_color_chart_dark_ocean_axis3,
+        mp_color_chart_dark_ocean_axis4,
+        mp_color_chart_dark_ocean_axis5,
+      ],
+      gradientMarks: true,
+      chrome: DARK_CHROME,
+    },
+  },
+  grayBlue: {
+    light: {
+      label: 'Gray + Blue',
+      series: [
+        mp_color_chart_light_grayBlue_series1,
+        mp_color_chart_light_grayBlue_series2,
+        mp_color_chart_light_grayBlue_series3,
+        mp_color_chart_light_grayBlue_series4,
+        mp_color_chart_light_grayBlue_series5,
+        mp_color_chart_light_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlue_axis1,
+        mp_color_chart_light_grayBlue_axis2,
+        mp_color_chart_light_grayBlue_axis3,
+        mp_color_chart_light_grayBlue_axis4,
+        mp_color_chart_light_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlue_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue',
+      series: [
+        mp_color_chart_dark_grayBlue_series1,
+        mp_color_chart_dark_grayBlue_series2,
+        mp_color_chart_dark_grayBlue_series3,
+        mp_color_chart_dark_grayBlue_series4,
+        mp_color_chart_dark_grayBlue_series5,
+        mp_color_chart_dark_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlue_axis1,
+        mp_color_chart_dark_grayBlue_axis2,
+        mp_color_chart_dark_grayBlue_axis3,
+        mp_color_chart_dark_grayBlue_axis4,
+        mp_color_chart_dark_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlue_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+  },
+  merchant: {
+    light: {
+      label: 'Merchant Blue',
+      series: [
+        mp_color_chart_light_merchant_series1,
+        mp_color_chart_light_merchant_series2,
+        mp_color_chart_light_merchant_series3,
+        mp_color_chart_light_merchant_series4,
+        mp_color_chart_light_merchant_series5,
+        mp_color_chart_light_merchant_series6,
+      ],
+      axis: [
+        mp_color_chart_light_merchant_axis1,
+        mp_color_chart_light_merchant_axis2,
+        mp_color_chart_light_merchant_axis3,
+        mp_color_chart_light_merchant_axis4,
+        mp_color_chart_light_merchant_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_merchant_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: MERCHANT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Merchant Blue',
+      series: [
+        mp_color_chart_dark_merchant_series1,
+        mp_color_chart_dark_merchant_series2,
+        mp_color_chart_dark_merchant_series3,
+        mp_color_chart_dark_merchant_series4,
+        mp_color_chart_dark_merchant_series5,
+        mp_color_chart_dark_merchant_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_merchant_axis1,
+        mp_color_chart_dark_merchant_axis2,
+        mp_color_chart_dark_merchant_axis3,
+        mp_color_chart_dark_merchant_axis4,
+        mp_color_chart_dark_merchant_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_merchant_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: MERCHANT_TREATMENT,
+    },
+  },
+  shopify: { light: SHOPIFY_LIGHT, dark: SHOPIFY_DARK },
+  bloomreach: {
+  light: {
+    label: 'Bloomreach — cyan',
+    series: [
+      mp_color_chart_light_bloomreach_series1,
+      mp_color_chart_light_bloomreach_series2,
+      mp_color_chart_light_bloomreach_series3,
+      mp_color_chart_light_bloomreach_series4,
+      mp_color_chart_light_bloomreach_series5,
+      mp_color_chart_light_bloomreach_series6,
+    ],
+    axis: [
+      mp_color_chart_light_bloomreach_axis1,
+      mp_color_chart_light_bloomreach_axis2,
+      mp_color_chart_light_bloomreach_axis3,
+      mp_color_chart_light_bloomreach_axis4,
+      mp_color_chart_light_bloomreach_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_light_bloomreach_comparison,
+    chrome: cloneChrome(BLOOMREACH_LIGHT_CHROME),
+    treatment: BLOOMREACH_TREATMENT,
+    skin: 'bloomreach',
+  },
+  // PROVISIONAL — light-only review
+  dark: {
+    label: 'Bloomreach — cyan',
+    series: [
+      mp_color_chart_dark_bloomreach_series1,
+      mp_color_chart_dark_bloomreach_series2,
+      mp_color_chart_dark_bloomreach_series3,
+      mp_color_chart_dark_bloomreach_series4,
+      mp_color_chart_dark_bloomreach_series5,
+      mp_color_chart_dark_bloomreach_series6,
+    ],
+    axis: [
+      mp_color_chart_dark_bloomreach_axis1,
+      mp_color_chart_dark_bloomreach_axis2,
+      mp_color_chart_dark_bloomreach_axis3,
+      mp_color_chart_dark_bloomreach_axis4,
+      mp_color_chart_dark_bloomreach_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_dark_bloomreach_comparison,
+    chrome: cloneChrome(DARK_CHROME),
+    treatment: BLOOMREACH_TREATMENT,
+    skin: 'bloomreach',
+  },
+  },
+  stripe: {
+  light: {
+    label: 'Stripe — Maropost blue',
+    series: [
+      mp_color_chart_light_stripe_series1,
+      mp_color_chart_light_stripe_series2,
+      mp_color_chart_light_stripe_series3,
+      mp_color_chart_light_stripe_series4,
+      mp_color_chart_light_stripe_series5,
+      mp_color_chart_light_stripe_series6,
+    ],
+    axis: [
+      mp_color_chart_light_stripe_axis1,
+      mp_color_chart_light_stripe_axis2,
+      mp_color_chart_light_stripe_axis3,
+      mp_color_chart_light_stripe_axis4,
+      mp_color_chart_light_stripe_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_light_stripe_comparison,
+    chrome: cloneChrome(STRIPE_LIGHT_CHROME),
+    treatment: STRIPE_TREATMENT,
+    skin: 'stripe',
+  },
+  // PROVISIONAL — light-only review
+  dark: {
+    label: 'Stripe — Maropost blue',
+    series: [
+      mp_color_chart_dark_stripe_series1,
+      mp_color_chart_dark_stripe_series2,
+      mp_color_chart_dark_stripe_series3,
+      mp_color_chart_dark_stripe_series4,
+      mp_color_chart_dark_stripe_series5,
+      mp_color_chart_dark_stripe_series6,
+    ],
+    axis: [
+      mp_color_chart_dark_stripe_axis1,
+      mp_color_chart_dark_stripe_axis2,
+      mp_color_chart_dark_stripe_axis3,
+      mp_color_chart_dark_stripe_axis4,
+      mp_color_chart_dark_stripe_axis5,
+    ],
+    gradientMarks: false,
+    comparisonColor: mp_color_chart_dark_stripe_comparison,
+    chrome: cloneChrome(DARK_CHROME),
+    treatment: STRIPE_TREATMENT,
+    skin: 'stripe',
+  },
+  },
+  // Same marks; `skin` adds the Shopify admin page + card chrome on dashboards.
+  shopifyAdmin: {
+    light: { ...SHOPIFY_LIGHT, label: 'Shopify — charts + cards', skin: 'polaris' },
+    dark: { ...SHOPIFY_DARK, label: 'Shopify — charts + cards', skin: 'polaris' },
+  },
+  // Shares GRAY_BLUE_TREATMENT — comparison/posNeg values are identical; only
+  // the series slots differ (subtle gold in the reference's orange position).
+  grayBlueGold: {
+    light: {
+      label: 'Gray + Blue + Gold',
+      series: [
+        mp_color_chart_light_grayBlueGold_series1,
+        mp_color_chart_light_grayBlueGold_series2,
+        mp_color_chart_light_grayBlueGold_series3,
+        mp_color_chart_light_grayBlueGold_series4,
+        mp_color_chart_light_grayBlueGold_series5,
+        mp_color_chart_light_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlueGold_axis1,
+        mp_color_chart_light_grayBlueGold_axis2,
+        mp_color_chart_light_grayBlueGold_axis3,
+        mp_color_chart_light_grayBlueGold_axis4,
+        mp_color_chart_light_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlueGold_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_GOLD_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue + Gold',
+      series: [
+        mp_color_chart_dark_grayBlueGold_series1,
+        mp_color_chart_dark_grayBlueGold_series2,
+        mp_color_chart_dark_grayBlueGold_series3,
+        mp_color_chart_dark_grayBlueGold_series4,
+        mp_color_chart_dark_grayBlueGold_series5,
+        mp_color_chart_dark_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlueGold_axis1,
+        mp_color_chart_dark_grayBlueGold_axis2,
+        mp_color_chart_dark_grayBlueGold_axis3,
+        mp_color_chart_dark_grayBlueGold_axis4,
+        mp_color_chart_dark_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlueGold_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_GOLD_TREATMENT,
+    },
+  },
+  social: {
+    light: {
+      label: 'Bright Social',
+      series: [
+        mp_color_chart_light_social_series1,
+        mp_color_chart_light_social_series2,
+        mp_color_chart_light_social_series3,
+        mp_color_chart_light_social_series4,
+        mp_color_chart_light_social_series5,
+        mp_color_chart_light_social_series6,
+      ],
+      axis: [
+        mp_color_chart_light_social_axis1,
+        mp_color_chart_light_social_axis2,
+        mp_color_chart_light_social_axis3,
+        mp_color_chart_light_social_axis4,
+        mp_color_chart_light_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_social_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: SOCIAL_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Bright Social',
+      series: [
+        mp_color_chart_dark_social_series1,
+        mp_color_chart_dark_social_series2,
+        mp_color_chart_dark_social_series3,
+        mp_color_chart_dark_social_series4,
+        mp_color_chart_dark_social_series5,
+        mp_color_chart_dark_social_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_social_axis1,
+        mp_color_chart_dark_social_axis2,
+        mp_color_chart_dark_social_axis3,
+        mp_color_chart_dark_social_axis4,
+        mp_color_chart_dark_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_social_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: SOCIAL_TREATMENT,
+    },
+  },
+  // Gradient exploration base — starts as an exact clone of `social` (same
+  // tokens, own treatment instance) so /dashboard-gradient can diverge without
+  // moving `?chart=social` or the production default.
+  socialGradient: {
+    light: {
+      label: 'Bright Social — Gradient',
+      series: [
+        mp_color_chart_light_social_series1,
+        mp_color_chart_light_social_series2,
+        mp_color_chart_light_social_series3,
+        mp_color_chart_light_social_series4,
+        mp_color_chart_light_social_series5,
+        mp_color_chart_light_social_series6,
+      ],
+      axis: [
+        mp_color_chart_light_social_axis1,
+        mp_color_chart_light_social_axis2,
+        mp_color_chart_light_social_axis3,
+        mp_color_chart_light_social_axis4,
+        mp_color_chart_light_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_social_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: SOCIAL_GRADIENT_EMBOSS_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Bright Social — Gradient',
+      series: [
+        mp_color_chart_dark_social_series1,
+        mp_color_chart_dark_social_series2,
+        mp_color_chart_dark_social_series3,
+        mp_color_chart_dark_social_series4,
+        mp_color_chart_dark_social_series5,
+        mp_color_chart_dark_social_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_social_axis1,
+        mp_color_chart_dark_social_axis2,
+        mp_color_chart_dark_social_axis3,
+        mp_color_chart_dark_social_axis4,
+        mp_color_chart_dark_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_social_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: SOCIAL_GRADIENT_EMBOSS_TREATMENT,
+    },
+  },
+  grayBlueGradient: {
+    light: {
+      label: 'Gray + Blue — Gradient',
+      series: [
+        mp_color_chart_light_grayBlue_series1,
+        mp_color_chart_light_grayBlue_series2,
+        mp_color_chart_light_grayBlue_series3,
+        mp_color_chart_light_grayBlue_series4,
+        mp_color_chart_light_grayBlue_series5,
+        mp_color_chart_light_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlue_axis1,
+        mp_color_chart_light_grayBlue_axis2,
+        mp_color_chart_light_grayBlue_axis3,
+        mp_color_chart_light_grayBlue_axis4,
+        mp_color_chart_light_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlue_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue — Gradient',
+      series: [
+        mp_color_chart_dark_grayBlue_series1,
+        mp_color_chart_dark_grayBlue_series2,
+        mp_color_chart_dark_grayBlue_series3,
+        mp_color_chart_dark_grayBlue_series4,
+        mp_color_chart_dark_grayBlue_series5,
+        mp_color_chart_dark_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlue_axis1,
+        mp_color_chart_dark_grayBlue_axis2,
+        mp_color_chart_dark_grayBlue_axis3,
+        mp_color_chart_dark_grayBlue_axis4,
+        mp_color_chart_dark_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlue_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_GRADIENT_TREATMENT,
+    },
+  },
+  grayBlueGoldGradient: {
+    light: {
+      label: 'Gray + Blue + Gold — Gradient',
+      series: [
+        mp_color_chart_light_grayBlueGold_series1,
+        mp_color_chart_light_grayBlueGold_series2,
+        mp_color_chart_light_grayBlueGold_series3,
+        mp_color_chart_light_grayBlueGold_series4,
+        mp_color_chart_light_grayBlueGold_series5,
+        mp_color_chart_light_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlueGold_axis1,
+        mp_color_chart_light_grayBlueGold_axis2,
+        mp_color_chart_light_grayBlueGold_axis3,
+        mp_color_chart_light_grayBlueGold_axis4,
+        mp_color_chart_light_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlueGold_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_GOLD_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue + Gold — Gradient',
+      series: [
+        mp_color_chart_dark_grayBlueGold_series1,
+        mp_color_chart_dark_grayBlueGold_series2,
+        mp_color_chart_dark_grayBlueGold_series3,
+        mp_color_chart_dark_grayBlueGold_series4,
+        mp_color_chart_dark_grayBlueGold_series5,
+        mp_color_chart_dark_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlueGold_axis1,
+        mp_color_chart_dark_grayBlueGold_axis2,
+        mp_color_chart_dark_grayBlueGold_axis3,
+        mp_color_chart_dark_grayBlueGold_axis4,
+        mp_color_chart_dark_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlueGold_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_GOLD_GRADIENT_TREATMENT,
+    },
+  },
+  oceanGradient: {
+    light: {
+      label: 'Ocean — Gradient',
+      series: [
+        mp_color_chart_light_ocean_series1,
+        mp_color_chart_light_ocean_series2,
+        mp_color_chart_light_ocean_series3,
+        mp_color_chart_light_ocean_series4,
+        mp_color_chart_light_ocean_series5,
+        mp_color_chart_light_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_light_ocean_axis1,
+        mp_color_chart_light_ocean_axis2,
+        mp_color_chart_light_ocean_axis3,
+        mp_color_chart_light_ocean_axis4,
+        mp_color_chart_light_ocean_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_ocean_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: OCEAN_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Ocean — Gradient',
+      series: [
+        mp_color_chart_dark_ocean_series1,
+        mp_color_chart_dark_ocean_series2,
+        mp_color_chart_dark_ocean_series3,
+        mp_color_chart_dark_ocean_series4,
+        mp_color_chart_dark_ocean_series5,
+        mp_color_chart_dark_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_ocean_axis1,
+        mp_color_chart_dark_ocean_axis2,
+        mp_color_chart_dark_ocean_axis3,
+        mp_color_chart_dark_ocean_axis4,
+        mp_color_chart_dark_ocean_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_ocean_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OCEAN_GRADIENT_TREATMENT,
+    },
+  },
+}
+
+/** Back-compat: light series colourways keyed by palette. */
+export const CHART_PALETTES: Record<ChartPalette, string[]> = Object.fromEntries(
+  Object.entries(CHART_THEMES).map(([id, modes]) => [id, modes.light.series]),
+) as Record<ChartPalette, string[]>
+
+const chartPaletteId = ref<ChartPalette>('grayBlue')
+
+/**
+ * Provide/inject key that lets a widget subtree pin an explicit theme instead of
+ * the global palette. No provider ships today (the compare pages that used it
+ * were retired); widgets still inject it so a scoped preview stays possible.
+ */
+export const CHART_PALETTE_OVERRIDE: InjectionKey<Ref<ChartTheme | undefined> | ChartTheme> = Symbol('chartPaletteOverride')
+
+/**
+ * Per-widget theme overrides, keyed by metricId. A page provides the map (today
+ * only /dashboard-gradient's emboss POC does) and DashboardWidgetCard turns a
+ * matching entry into a CHART_PALETTE_OVERRIDE for that widget's subtree. With
+ * no provider the card provides `undefined` and widgets fall back to the
+ * global theme, so production pages are unaffected.
+ */
+export const WIDGET_THEME_OVERRIDES: InjectionKey<Ref<Partial<Record<string, ChartTheme>>>> = Symbol('widgetThemeOverrides')
+
+/** Set the active chart palette (mirrors onto <html data-chart> for debug). */
+export function applyChartPalette(id: ChartPalette) {
+  chartPaletteId.value = id
+  document.documentElement.dataset.chart = id
+}
+
+/**
+ * Mode-aware chart theme composable. Call once in setup; returns reactive palette,
+ * theme, and Apex base options that track Vuetify light/dark.
+ */
+export function useChartTheme() {
+  const vuetifyTheme = useTheme()
+  const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+
+  const mode = computed<ChartMode>(() => (
+    vuetifyTheme.global.current.value.dark ? 'dark' : 'light'
+  ))
+
+  const theme = computed<ChartTheme>(() => {
+    const override = unref(themeOverride)
+    if (override) return override
+    return CHART_THEMES[chartPaletteId.value][mode.value]
+  })
+
+  const palette = computed<string[]>(() => theme.value.series)
+
+  /** @deprecated Prefer `palette` from `useChartTheme()`. */
+  const activeChartPalette = palette
+  /** @deprecated Prefer `theme` from `useChartTheme()`. */
+  const activeChartTheme = theme
+
+  const applyChartTheme = computed(() => {
+    const chrome = theme.value.chrome
+    const labelStyle = {
+      colors: chrome.axisLabel,
+      fontSize: '12px',
+      fontWeight: 500 as const,
+    }
+
+    return (): Pick<
+      ApexOptions,
+      'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip' | 'stroke' | 'dataLabels'
+    > => ({
+      colors: palette.value,
+      chart: {
+        toolbar: { show: false },
+        fontFamily: 'Inter, system-ui, sans-serif',
+      },
+      grid: {
+        show: false,
+        borderColor: chrome.grid,
+        padding: { top: 8, right: 12, bottom: 4, left: 12 },
+      },
+      xaxis: {
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        tickAmount: 6,
+        labels: { style: labelStyle, hideOverlappingLabels: true, rotate: 0 },
+      },
+      yaxis: {
+        labels: { style: labelStyle },
+      },
+      tooltip: {
+        theme: chrome.tooltipTheme,
+      },
+      stroke: {
+        width: 2,
+      },
+      dataLabels: {
+        enabled: false,
+      },
+    })
+  })
+
+  return {
+    mode,
+    theme,
+    palette,
+    applyChartTheme,
+    activeChartPalette,
+    activeChartTheme,
+  }
+}
+
+/** Mix a hex colour toward black by fraction `t` (0..1) — the emboss shadow lip. */
+export function shadeHex(hex: string, t: number): string {
+  const clean = hex.replace('#', '')
+  const mix = (c: number) => Math.round(c * (1 - t))
+  const to2 = (i: number) => mix(parseInt(clean.slice(i, i + 2), 16)).toString(16).padStart(2, '0')
+  return `#${to2(0)}${to2(2)}${to2(4)}`
+}
+
+/** Bold pitch fade — bright crown, series body, deep base. */
+export function hyperPitchStops(color: string): { offset: number; color: string; opacity: number }[] {
+  return [
+    { offset: 0, color: tintHex(color, 0.58), opacity: 1 },
+    { offset: 36, color: tintHex(color, 0.16), opacity: 1 },
+    { offset: 70, color, opacity: 1 },
+    { offset: 100, color: shadeHex(color, 0.34), opacity: 1 },
+  ]
+}
+
+/**
+ * Wrap a vertical gradient ramp in an embossed shell: a bright gloss at the very
+ * top edge and a darker lip at the base, so a mark reads as a lit solid rather
+ * than a flat wash. Stops are compressed into the first/last few percent so the
+ * body of the ramp is untouched.
+ */
+export function embossStops(
+  stops: { offset: number; color: string; opacity: number }[],
+): { offset: number; color: string; opacity: number }[] {
+  if (stops.length < 2) return stops
+  const head = stops[0]!
+  const tail = stops[stops.length - 1]!
+  const squeeze = stops.map((s) => ({ ...s, offset: 6 + s.offset * 0.88 }))
+  return [
+    { offset: 0, color: tintHex(head.color, 0.5), opacity: 1 },
+    ...squeeze,
+    { offset: 100, color: shadeHex(tail.color, 0.1), opacity: 1 },
+  ]
+}
+
+/**
+ * Donut/pie slice sweep. Apex's radial gradient spans the full circle radius,
+ * so the stops are pinned to the visible band (`holePct`..100): a smooth
+ * two-tone blend from the slice's luminous companion at the inner edge to the
+ * series colour at the rim — both ends bright, no shading (reference style).
+ */
+export function embossDonutStops(
+  color: string,
+  holePct: number,
+): { offset: number; color: string; opacity: number }[] {
+  const lit = tintHex(duotoneCompanion(color), 0.25)
+  return [
+    { offset: 0, color: lit, opacity: 0.94 },
+    { offset: holePct, color: lit, opacity: 0.94 },
+    { offset: 100, color, opacity: 0.94 },
+  ]
+}
+
+/** RGB hex → [hue 0-360, saturation 0-1, lightness 0-1]. */
+function hexToHsl(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.slice(0, 2), 16) / 255
+  const g = parseInt(clean.slice(2, 4), 16) / 255
+  const b = parseInt(clean.slice(4, 6), 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+  let h = 0
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g - b) / d + 6) % 6)
+    else if (max === g) h = 60 * ((b - r) / d + 2)
+    else h = 60 * ((r - g) / d + 4)
+  }
+  return [h, s, l]
+}
+
+/** [h, s, l] → RGB hex string. */
+function hslToHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+  const [r2, g2, b2] =
+    h < 60 ? [c, x, 0]
+    : h < 120 ? [x, c, 0]
+    : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c]
+    : h < 300 ? [x, 0, c]
+    : [c, 0, x]
+  const to2 = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0')
+  return `#${to2(r2)}${to2(g2)}${to2(b2)}`
+}
+
+/** Shift a hex colour's hue by `deg` degrees (HSL space, S/L preserved). */
+export function hueShiftHex(hex: string, deg: number): string {
+  const [h, s, l] = hexToHsl(hex)
+  return hslToHex((h + deg + 360) % 360, s, l)
+}
+
+/** Boost a hex colour's HSL saturation by `amount` (clamped 0..1). */
+export function saturateHex(hex: string, amount: number): string {
+  const [h, s, l] = hexToHsl(hex)
+  return hslToHex(h, Math.min(1, Math.max(0, s + amount)), l)
+}
+
+/**
+ * The luminous partner a mark's gradient sweeps to, matched to the reference
+ * set (Stripe blue→sky-teal, Sea Blizz teal→mint, Near Moon violet→teal,
+ * Bora Bora teal→pale yellow): every hue travels counterclockwise along the
+ * cool arc — blue lands at teal, lavender at periwinkle-teal, cyan at spring
+ * mint, green at yellow-green. Both gradient ends stay bright; base series
+ * colours stay untouched everywhere (legends, tooltips, recognisability).
+ */
+export function duotoneCompanion(hex: string): string {
+  const [h, s] = hexToHsl(hex)
+  // Near-neutrals (grayBlue's gray slots) have no meaningful hue — shifting and
+  // saturating would tint them pink. They sweep by tint alone at the call sites.
+  if (s < 0.08) return hex
+  // ~25° of travel keeps each series differentiable end to end (Stripe and
+  // Messenger sweep about this far) — blue lands at cyan-blue, not aqua-green.
+  // Warm hues clamp tighter: gold at -30 would land on coral-red, which reads
+  // as a danger tint on a data mark — -15 keeps it amber-orange.
+  return saturateHex(hueShiftHex(hex, h >= 180 ? -25 : h < 60 ? -15 : -30), 0.12)
+}
+
+/** Mix a hex colour toward white by fraction `t` (0..1) and return a hex string. */
+export function tintHex(hex: string, t: number): string {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.slice(0, 2), 16)
+  const g = parseInt(clean.slice(2, 4), 16)
+  const b = parseInt(clean.slice(4, 6), 16)
+  const mix = (c: number) => Math.round(c + (255 - c) * t)
+  const to2 = (c: number) => mix(c).toString(16).padStart(2, '0')
+  return `#${to2(r)}${to2(g)}${to2(b)}`
+}
+
+/**
+ * Pick the readable ink for text sitting on an arbitrary computed fill.
+ *
+ * P5.5: chart cell fills are generated at runtime (`tintHex` ramps, palette
+ * overrides), so they cannot be enumerated as static token pairs the way the
+ * rest of the system is checked. Choosing the ink from the fill's own WCAG
+ * relative luminance is the runtime equivalent of that guarantee, and it holds
+ * for every palette preset rather than only the default one.
+ *
+ * The 0.5 split is where #1a1814 and #ffffff cross over: both inks clear 4.5:1
+ * against a fill on their own side of it.
+ */
+export function readableInkOn(fillHex: string): string {
+  const clean = fillHex.replace('#', '')
+  const channel = (index: number) => {
+    const s = parseInt(clean.slice(index, index + 2), 16) / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
+  return luminance > 0.5 ? mp_color_chart_heatmapInk : mp_color_chart_heatmapInkStrong
+}
+
+/** Build legend config with explicit marker colours (Apex omits them without fillColors). */
+export function chartLegendOptions(
+  palette: string[],
+  chrome: ChartChrome,
+  position: 'top' | 'bottom' = 'top',
+  align?: 'left' | 'center' | 'right',
+  fontSize = 12,
+): ApexOptions['legend'] {
+  return {
+    show: true,
+    position,
+    horizontalAlign: align ?? (position === 'top' ? 'right' : 'center'),
+    fontSize: `${fontSize}px`,
+    fontWeight: 500,
+    labels: { colors: chrome.legendLabel },
+    markers: {
+      size: 8,
+      strokeWidth: 0,
+      fillColors: palette,
+    },
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "comment": "Single source of truth for the /reel/fly camera journey. The view derives its master animation from these durations. flipAt is seconds into s07 when the world crossfades to dark.",
+  "segments": [
+    { "id": "s04", "dur": 8.0 },
+    { "id": "s05", "dur": 6.0 },
+    { "id": "s06", "dur": 10.0 },
+    { "id": "s07", "dur": 4.5 }
+  ],
+  "flipAt": 1.8
+}

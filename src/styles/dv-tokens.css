@@ -1,0 +1,162 @@
+/* Da Vinci copilot — theme-scoped aliases over generated aiAccent tokens */
+
+:root,
+.v-theme--maropostLight,
+[data-theme='light'] {
+  /* Da Vinci accent — uses app accent (matches Add widget button, adapts to user's color choice) */
+  --dv-accent: var(--accent);
+  --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, black);
+  --dv-accent-active: color-mix(in oklch, var(--accent) 70%, black);
+  --dv-on-accent: var(--mp-color-light-dv-onAccent);
+  /* Orb particle ink (read via inherited `color` by the canvas engine) — dark
+     ink for light surfaces; the dark theme flips it to a light ink below. */
+  --dv-ink: var(--mp-color-light-dv-ink);
+  --dv-accent-soft: var(--mp-color-light-aiAccent-soft);
+  --dv-border: var(--mp-color-light-aiAccent-border);
+  --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
+  --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
+  --dv-muted: var(--mp-color-light-aiAccent-muted);
+  /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, var(--mp-color-light-dv-gradFrom) 0%, var(--mp-color-light-dv-gradMid) 52%, var(--mp-color-light-dv-gradTo) 100%);
+  /* Hero greeting gradient text — violet → blue → cyan, left to right */
+  --dv-hero-grad: linear-gradient(90deg, var(--mp-color-light-dv-heroGradFrom) 0%, var(--mp-color-light-dv-heroGradMid) 50%, var(--mp-color-light-dv-heroGradTo) 100%);
+  /* Orb particle colors (fed into WebGL uniforms — keep literal hex, never color-mix) */
+  --dv-orb-c1: var(--mp-color-light-dv-orbC1);
+  --dv-orb-c2: var(--mp-color-light-dv-orbC2);
+  --dv-orb-c3: var(--mp-color-light-dv-orbC3);
+  /* Saturated neon stops — hover ring + the mark's particle gradient */
+  --dv-ring-c1: var(--mp-color-light-dv-ringC1);
+  --dv-ring-c2: var(--mp-color-light-dv-ringC2);
+  --dv-ring-c3: var(--mp-color-light-dv-ringC3);
+  /* Immersive AI-experience backdrop — pure white paper (Marojarvis parity):
+     the orb's ink particles were tuned for white; the ambient dust IS the texture */
+  --dv-experience-bg: var(--mp-color-light-dv-experienceBg);
+  --dv-header-grad: linear-gradient(
+    120deg,
+    var(--mp-color-light-aiAccent-soft) 0%,
+    var(--mp-color-light-aiAccent-muted) 100%
+  );
+  --dv-metric-positive: var(--mp-color-light-aiMetric-positive);
+  --dv-metric-negative: var(--mp-color-light-aiMetric-negative);
+  --dv-metric-neutral: var(--mp-color-light-aiMetric-neutral);
+  --dv-action-gradient: linear-gradient(
+    125deg,
+    var(--mp-color-light-aiAccent-actionGradientFrom) 0%,
+    var(--mp-color-light-aiAccent-actionGradientMid) 45%,
+    var(--mp-color-light-aiAccent-actionGradientTo) 100%
+  );
+  --dv-action-on-gradient: var(--mp-color-light-aiAccent-actionOnGradient);
+  --dv-orbit-on-fill: var(--mp-color-light-aiAccent-orbitOnFill);
+}
+
+/* ── Orbit voice mode (drawer) — high-fidelity handoff values, light-theme spec.
+   Exact hex from the Orbit design handoff; do not derive or color-mix. ── */
+:root {
+  --dv-orbit-grad: linear-gradient(135deg, var(--mp-color-light-dv-orbit-gradFrom) 0%, var(--mp-color-light-dv-orbit-gradMid) 55%, var(--mp-color-light-dv-orbit-gradTo) 100%);
+  --dv-orbit-strip-grad: linear-gradient(120deg, var(--mp-color-light-dv-orbit-stripGradFrom), var(--mp-color-light-dv-orbit-stripGradTo));
+  --dv-orbit-wave-grad: linear-gradient(180deg, var(--mp-color-light-dv-orbit-waveGradFrom), var(--mp-color-light-dv-orbit-waveGradTo));
+  --dv-orbit-ink: var(--mp-color-light-dv-orbit-ink);
+  --dv-orbit-slate: var(--mp-color-light-dv-orbit-slate);
+  --dv-orbit-body: var(--mp-color-light-dv-orbit-body);
+  --dv-orbit-mist: var(--mp-color-light-dv-orbit-mist);
+  --dv-orbit-chip: var(--mp-color-light-dv-orbit-chip);
+  --dv-orbit-line: var(--mp-color-light-dv-orbit-line);
+  --dv-orbit-hairline: var(--mp-color-light-dv-orbit-hairline);
+  --dv-orbit-surface: var(--mp-color-light-dv-orbit-surface);
+  --dv-orbit-echo-bg: var(--mp-color-light-dv-orbit-echoBg);
+  --dv-orbit-card-line: var(--mp-color-light-dv-orbit-cardLine);
+  --dv-orbit-blue: var(--mp-color-light-dv-orbit-blue);
+  --dv-orbit-blue-hover: var(--mp-color-light-dv-orbit-blueHover);
+  --dv-orbit-bar-light: var(--mp-color-light-dv-orbit-barLight);
+  --dv-orbit-sep: var(--mp-color-light-dv-orbit-sep);
+  --dv-orbit-success: var(--mp-color-light-dv-orbit-success);
+  --dv-orbit-success-text: var(--mp-color-light-dv-orbit-successText);
+  --dv-orbit-success-bg: var(--mp-color-light-dv-orbit-successBg);
+  --dv-orbit-warn: var(--mp-color-light-dv-orbit-warn);
+  --dv-orbit-warn-bg: var(--mp-color-light-dv-orbit-warnBg);
+  --dv-orbit-muted: var(--mp-color-light-dv-orbit-muted);
+  --dv-orbit-muted-bg: var(--mp-color-light-dv-orbit-mutedBg);
+  --dv-orbit-mic-shadow: var(--mp-shadow-dvOrbitMic);
+  --dv-orbit-input-shadow: var(--mp-shadow-dvOrbitInput);
+}
+
+/* ── Orbit voice mode — dark-theme overrides. Hand-tuned hex mirroring the
+   light handoff spec (same no-derive rule); gradients that already read on
+   dark (grad, wave-grad) are inherited unchanged. ── */
+.v-theme--maropostDark,
+[data-theme='dark'] {
+  --dv-orbit-strip-grad: linear-gradient(120deg, var(--mp-color-dark-dv-orbit-stripGradFrom), var(--mp-color-dark-dv-orbit-stripGradTo));
+  --dv-orbit-ink: var(--mp-color-dark-dv-orbit-ink);
+  --dv-orbit-slate: var(--mp-color-dark-dv-orbit-slate);
+  --dv-orbit-body: var(--mp-color-dark-dv-orbit-body);
+  --dv-orbit-mist: var(--mp-color-dark-dv-orbit-mist);
+  --dv-orbit-chip: var(--mp-color-dark-dv-orbit-chip);
+  --dv-orbit-line: var(--mp-color-dark-dv-orbit-line);
+  --dv-orbit-hairline: var(--mp-color-dark-dv-orbit-hairline);
+  --dv-orbit-surface: var(--mp-color-dark-dv-orbit-surface);
+  --dv-orbit-echo-bg: var(--mp-color-dark-dv-orbit-echoBg);
+  --dv-orbit-card-line: var(--mp-color-dark-dv-orbit-cardLine);
+  --dv-orbit-blue: var(--mp-color-dark-dv-orbit-blue);
+  --dv-orbit-blue-hover: var(--mp-color-dark-dv-orbit-blueHover);
+  --dv-orbit-bar-light: var(--mp-color-dark-dv-orbit-barLight);
+  --dv-orbit-sep: var(--mp-color-dark-dv-orbit-sep);
+  --dv-orbit-success: var(--mp-color-dark-dv-orbit-success);
+  --dv-orbit-success-text: var(--mp-color-dark-dv-orbit-successText);
+  --dv-orbit-success-bg: var(--mp-color-dark-dv-orbit-successBg);
+  --dv-orbit-warn: var(--mp-color-dark-dv-orbit-warn);
+  --dv-orbit-warn-bg: var(--mp-color-dark-dv-orbit-warnBg);
+  --dv-orbit-muted: var(--mp-color-dark-dv-orbit-muted);
+  --dv-orbit-muted-bg: var(--mp-color-dark-dv-orbit-mutedBg);
+  --dv-orbit-mic-shadow: var(--mp-shadow-dark-dvOrbitMic);
+  --dv-orbit-input-shadow: var(--mp-shadow-dark-dvOrbitInput);
+}
+
+.v-theme--maropostDark,
+[data-theme='dark'] {
+  /* Da Vinci accent — uses app accent (adapts to user's color choice) */
+  --dv-accent: var(--accent);
+  --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, white);
+  --dv-accent-active: color-mix(in oklch, var(--accent) 70%, white);
+  --dv-on-accent: var(--mp-color-dark-dv-onAccent);
+  /* Light ink so the orb's particle mark reads on dark surfaces */
+  --dv-ink: var(--mp-color-dark-dv-ink);
+  --dv-accent-soft: var(--mp-color-dark-aiAccent-soft);
+  --dv-border: var(--mp-color-dark-aiAccent-border);
+  --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
+  --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
+  --dv-muted: var(--mp-color-dark-aiAccent-muted);
+  /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, var(--mp-color-dark-dv-gradFrom) 0%, var(--mp-color-dark-dv-gradMid) 52%, var(--mp-color-dark-dv-gradTo) 100%);
+  /* Hero greeting gradient text — brighter stops for luminance on dark surfaces */
+  --dv-hero-grad: linear-gradient(90deg, var(--mp-color-dark-dv-heroGradFrom) 0%, var(--mp-color-dark-dv-heroGradMid) 50%, var(--mp-color-dark-dv-heroGradTo) 100%);
+  /* Orb particle colors — brighter stops so additive glow reads on dark surfaces */
+  --dv-orb-c1: var(--mp-color-dark-dv-orbC1);
+  --dv-orb-c2: var(--mp-color-dark-dv-orbC2);
+  --dv-orb-c3: var(--mp-color-dark-dv-orbC3);
+  /* Saturated neon stops — hover ring + the mark's particle gradient */
+  --dv-ring-c1: var(--mp-color-dark-dv-ringC1);
+  --dv-ring-c2: var(--mp-color-dark-dv-ringC2);
+  --dv-ring-c3: var(--mp-color-dark-dv-ringC3);
+  /* Immersive AI-experience backdrop */
+  --dv-experience-bg: radial-gradient(
+    1200px 800px at 50% 38%,
+    var(--mp-color-dark-aiAccent-soft) 0%,
+    rgb(var(--v-theme-background)) 70%
+  );
+  --dv-header-grad: linear-gradient(
+    120deg,
+    var(--mp-color-dark-aiAccent-soft) 0%,
+    var(--mp-color-dark-aiAccent-muted) 100%
+  );
+  --dv-metric-positive: var(--mp-color-dark-aiMetric-positive);
+  --dv-metric-negative: var(--mp-color-dark-aiMetric-negative);
+  --dv-metric-neutral: var(--mp-color-dark-aiMetric-neutral);
+  --dv-action-gradient: linear-gradient(
+    125deg,
+    var(--mp-color-dark-aiAccent-actionGradientFrom) 0%,
+    var(--mp-color-dark-aiAccent-actionGradientMid) 45%,
+    var(--mp-color-dark-aiAccent-actionGradientTo) 100%
+  );
+  --dv-action-on-gradient: var(--mp-color-dark-aiAccent-actionOnGradient);
+  --dv-orbit-on-fill: var(--mp-color-dark-aiAccent-orbitOnFill);
+}

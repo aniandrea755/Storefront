@@ -1,0 +1,230 @@
+/* Shared widget styles for Retail views.
+   Mirrors the Merchandise `merch-*` pattern but with the
+   `retail-` prefix and retail accent (teal) as default. */
+
+.retail-widget-card {
+  background: var(--surface-primary) !important;
+  border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
+  border-radius: var(--r-section) !important;
+  /* Polish pass 2026-08: elevation removed — cards are border-only per the
+     containment rule (`flat border rounded="lg"`, no shadows); hover affordance
+     is the border step. */
+  box-shadow: none !important;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.retail-widget-card:hover {
+  /* Hover affordance is the border step alone — no elevation anywhere on cards
+     (GAPS §8 closed 2026-08-30). */
+  border-color: color-mix(in oklch, var(--text-primary) 18%, transparent) !important;
+}
+
+/* ── Widget header ────────────────────────────────────────────── */
+.retail-widget-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--mp-space-12);
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-space-14);
+}
+
+/* Below the compact breakpoint the actions cluster drops under the title
+   instead of overlapping it (SalesChannelDetail POS overview at 375). */
+@media (max-width: 640px) {
+  .retail-widget-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retail-widget-header__actions {
+    justify-self: start;
+  }
+}
+
+.retail-widget-header__title {
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.retail-widget-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-4);
+}
+
+.retail-widget-header__sub {
+  font-size: var(--mp-fontSize-12);
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.retail-widget-body {
+  padding: 0 var(--mp-component-card-padding) var(--mp-component-card-padding);
+}
+
+/* ── Quick action tiles ───────────────────────────────────────── */
+.retail-action-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
+  border-radius: var(--r-section);
+  background: var(--surface-primary);
+  cursor: pointer;
+  transition: border-color 120ms ease;
+  height: 100%;
+}
+
+.retail-action-tile:hover {
+  border-color: color-mix(in oklch, var(--cloud-retail-accent) 35%, transparent);
+}
+
+.retail-action-tile:focus-visible {
+  outline: 2px solid var(--cloud-retail-accent);
+  outline-offset: 2px;
+}
+
+.retail-action-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-chip);
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.retail-action-tile__icon--primary    { background: var(--accent-soft);                                                color: var(--accent-ink); }
+.retail-action-tile__icon--retail     { background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);     color: var(--cloud-retail-text); }
+.retail-action-tile__icon--marketing  { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);  color: var(--cloud-marketing-text); }
+.retail-action-tile__icon--contacts   { background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);   color: var(--cloud-contacts-text); }
+.retail-action-tile__icon--analytics  { background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);  color: var(--cloud-analytics-text); }
+.retail-action-tile__icon--commerce   { background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);   color: var(--cloud-commerce-text); }
+.retail-action-tile__icon--service    { background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);    color: var(--cloud-service-text); }
+.retail-action-tile__icon--warning    { background: color-mix(in oklch, var(--warn) 12%, transparent);                   color: var(--warn-ink); }
+.retail-action-tile__icon--success    { background: color-mix(in oklch, var(--pos) 12%, transparent);                    color: var(--pos); }
+
+.retail-action-tile__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.retail-action-tile__desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ── Progress bar ─────────────────────────────────────────────── */
+.retail-widget-progress {
+  padding: 0 var(--mp-component-card-padding) var(--mp-space-12);
+}
+
+/* ── Lists (todo + recent) ────────────────────────────────────── */
+.retail-list {
+  padding: 4px 10px 12px;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.retail-list .v-list-item {
+  min-height: 44px;
+  padding-block: 8px;
+}
+
+.retail-list .v-list-item__prepend > .v-icon,
+.retail-list .v-list-item__prepend > .retail-row-icon {
+  margin-inline-end: 12px;
+}
+
+.retail-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.retail-list-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.35;
+  opacity: 1 !important;
+}
+
+.retail-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-chip);
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.retail-row-icon--contacts   { background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);  color: var(--cloud-contacts-text); }
+.retail-row-icon--marketing  { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent); color: var(--cloud-marketing-text); }
+.retail-row-icon--success    { background: color-mix(in oklch, var(--pos) 12%, transparent);                   color: var(--pos); }
+.retail-row-icon--warning    { background: color-mix(in oklch, var(--warn) 12%, transparent);                  color: var(--warn-ink); }
+
+/* ── Bulk action bar (above tables) ───────────────────────────── */
+.retail-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: color-mix(in oklch, var(--cloud-retail-accent) 6%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--cloud-retail-accent) 25%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--cloud-retail-accent) 25%, transparent);
+}
+
+/* ── Pulse-dot status indicator ──────────────────────────────── */
+.retail-status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.retail-status-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+.retail-status-dot--online {
+  color: var(--pos);
+}
+
+.retail-status-dot--online::before {
+  animation: retail-pulse 1.8s infinite;
+}
+
+.retail-status-dot--offline {
+  color: var(--neg);
+}
+
+.retail-status-dot--syncing {
+  color: var(--warn-ink);
+}
+
+@keyframes retail-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--pos) 40%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in oklch, var(--pos) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--pos) 0%, transparent); }
+}

@@ -1,0 +1,460 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useContentStore } from '@/stores/useContent'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
+import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
+
+type BlockType = 'title' | 'paragraph' | 'list' | 'image' | 'button' | 'divider' | 'spacer' | 'social' | 'html'
+
+interface EmailBlock {
+  id: string
+  type: BlockType
+  text: string
+  items: string[]
+  alt: string
+  label: string
+  url: string
+  height: number
+  align: 'left' | 'center' | 'right'
+}
+
+const route = useRoute()
+const router = useRouter()
+const content = useContentStore()
+
+const accountId = computed(() => route.params.accountId as string)
+const contentId = computed(() => Number(route.params.id))
+const item = computed(() => content.items.find(i => i.id === contentId.value))
+const backTo = computed(() => ({ name: 'EmailContent', params: { accountId: accountId.value } }))
+
+const PALETTE: { type: BlockType; label: string; icon: string }[] = [
+  { type: 'title', label: 'Title', icon: 'heading' },
+  { type: 'paragraph', label: 'Paragraph', icon: 'text' },
+  { type: 'list', label: 'List', icon: 'list' },
+  { type: 'image', label: 'Image', icon: 'image' },
+  { type: 'button', label: 'Button', icon: 'square-mouse-pointer' },
+  { type: 'divider', label: 'Divider', icon: 'minus' },
+  { type: 'spacer', label: 'Spacer', icon: 'move-vertical' },
+  { type: 'social', label: 'Social', icon: 'share-2' },
+  { type: 'html', label: 'HTML', icon: 'code' },
+]
+
+const ALIGN_ITEMS = [
+  { value: 'left', icon: 'align-left', label: 'Align left' },
+  { value: 'center', icon: 'align-center', label: 'Align center' },
+  { value: 'right', icon: 'align-right', label: 'Align right' },
+]
+
+let counter = 0
+function makeId() {
+  counter += 1
+  return `b${counter}`
+}
+
+function defaults(type: BlockType): EmailBlock {
+  const base: EmailBlock = { id: makeId(), type, text: '', items: [], alt: '', label: '', url: '', height: 24, align: 'left' }
+  switch (type) {
+    case 'title': return { ...base, text: 'Your headline here', align: 'center' }
+    case 'paragraph': return { ...base, text: 'Write a short, friendly paragraph to introduce this email.' }
+    case 'list': return { ...base, items: ['First point', 'Second point', 'Third point'] }
+    case 'image': return { ...base, alt: 'Hero image' }
+    case 'button': return { ...base, label: 'Shop now', url: 'https://', align: 'center' }
+    case 'html': return { ...base, text: '<!-- custom HTML -->' }
+    default: return base
+  }
+}
+
+const blocks = ref<EmailBlock[]>([
+  { ...defaults('title'), text: 'Welcome to Maropost 🎉' },
+  { ...defaults('paragraph'), text: 'Thanks for joining. Here’s everything you need to get started with your store.' },
+  { ...defaults('button'), label: 'Explore your dashboard' },
+])
+const selectedId = ref<string | null>(blocks.value[0]?.id ?? null)
+const selected = computed(() => blocks.value.find(b => b.id === selectedId.value) ?? null)
+
+const savedSnapshot = ref(JSON.stringify(blocks.value))
+const isDirty = computed(() => JSON.stringify(blocks.value) !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty)
+
+const toast = useToast()
+const previewOpen = ref(false)
+
+function addBlock(type: BlockType) {
+  const block = defaults(type)
+  const idx = selectedId.value ? blocks.value.findIndex(b => b.id === selectedId.value) : blocks.value.length - 1
+  blocks.value.splice(idx + 1, 0, block)
+  selectedId.value = block.id
+}
+function removeBlock(id: string) {
+  const idx = blocks.value.findIndex(b => b.id === id)
+  if (idx === -1) return
+  blocks.value.splice(idx, 1)
+  if (selectedId.value === id) selectedId.value = blocks.value[Math.max(0, idx - 1)]?.id ?? null
+}
+function move(id: string, dir: -1 | 1) {
+  const idx = blocks.value.findIndex(b => b.id === id)
+  const next = idx + dir
+  if (idx === -1 || next < 0 || next >= blocks.value.length) return
+  const [b] = blocks.value.splice(idx, 1)
+  if (!b) return
+  blocks.value.splice(next, 0, b)
+}
+function listText(block: EmailBlock): string {
+  return block.items.join('\n')
+}
+function setListText(block: EmailBlock, value: string) {
+  block.items = value.split('\n')
+}
+function save() {
+  savedSnapshot.value = JSON.stringify(blocks.value)
+  toast.success('Content saved')
+}
+function saveAndClose() {
+  save()
+  allowNextLeave()
+  router.push(backTo.value)
+}
+
+watch(contentId, () => {
+  savedSnapshot.value = JSON.stringify(blocks.value)
+})
+</script>
+
+<template>
+  <div class="ece-root">
+    <template v-if="item">
+      <MpBuilderShell
+        :back-to="backTo"
+        back-label="Back to Email Content"
+        :title="item.name"
+        :subtitle="`Block editor · ${blocks.length} blocks`"
+        :dirty="isDirty"
+        persistence-mode="explicit"
+      >
+        <template #actions>
+          <v-btn variant="text" class="text-none" prepend-icon="eye" @click="previewOpen = true">Preview</v-btn>
+          <v-btn variant="outlined" class="text-none" prepend-icon="save" @click="save">Save</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveAndClose">Save &amp; close</v-btn>
+        </template>
+
+        <template #left>
+          <div class="pa-3">
+            <div class="mp-meta-label text-medium-emphasis mb-2 px-1">Blocks</div>
+            <button
+              v-for="p in PALETTE"
+              :key="p.type"
+              type="button"
+              class="ece-palette__item d-flex align-center ga-2"
+              @click="addBlock(p.type)"
+            >
+              <v-icon size="18">{{ p.icon }}</v-icon>
+              <span class="text-body-2">{{ p.label }}</span>
+              <v-icon size="16" class="ece-palette__add ml-auto">plus</v-icon>
+            </button>
+          </div>
+        </template>
+
+        <div class="ece-canvas pa-6">
+          <div class="ece-doc mx-auto">
+            <div v-if="!blocks.length" class="text-center py-12 px-6">
+              <v-icon size="34" color="primary" class="mb-3">mail</v-icon>
+              <div class="mp-section-title mb-1">Start with a block</div>
+              <div class="text-body-2 text-medium-emphasis mb-4">Add a title, paragraph, or button from the Blocks panel.</div>
+              <div class="d-flex justify-center ga-2 flex-wrap">
+                <v-btn variant="tonal" class="text-none" size="small" @click="addBlock('title')">Title</v-btn>
+                <v-btn variant="tonal" class="text-none" size="small" @click="addBlock('paragraph')">Paragraph</v-btn>
+                <v-btn variant="tonal" class="text-none" size="small" @click="addBlock('button')">Button</v-btn>
+              </div>
+            </div>
+            <div
+              v-for="block in blocks"
+              :key="block.id"
+              class="ece-block"
+              :class="{ 'ece-block--selected': block.id === selectedId }"
+              @click="selectedId = block.id"
+            >
+              <div class="ece-block__controls">
+                <v-tooltip text="Move up" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="move(block.id, -1)" />
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Move down" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="move(block.id, 1)" />
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Delete block" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete block" @click.stop="removeBlock(block.id)" />
+                  </template>
+                </v-tooltip>
+              </div>
+
+              <h2 v-if="block.type === 'title'" class="ece-title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
+              <p v-else-if="block.type === 'paragraph'" class="ece-paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
+              <ul v-else-if="block.type === 'list'" class="ece-list">
+                <li v-for="(li, i) in block.items" :key="i">{{ li }}</li>
+              </ul>
+              <div v-else-if="block.type === 'image'" class="ece-image">
+                <v-icon size="32">image</v-icon>
+                <span class="text-caption text-medium-emphasis">{{ block.alt || 'Image' }}</span>
+              </div>
+              <div v-else-if="block.type === 'button'" :style="{ textAlign: block.align }">
+                <span class="ece-button">{{ block.label }}</span>
+              </div>
+              <hr v-else-if="block.type === 'divider'" class="ece-divider" />
+              <div v-else-if="block.type === 'spacer'" :style="{ height: `${block.height}px` }" />
+              <div v-else-if="block.type === 'social'" class="ece-social" :style="{ textAlign: block.align }">
+                <v-icon>facebook</v-icon><v-icon>instagram</v-icon><v-icon>twitter</v-icon><v-icon>linkedin</v-icon>
+              </div>
+              <pre v-else-if="block.type === 'html'" class="ece-html">{{ block.text }}</pre>
+            </div>
+          </div>
+        </div>
+
+        <template #right>
+          <div class="pa-4">
+            <template v-if="selected">
+              <MpFormGrid>
+                <MpFormSection :title="`${selected.type} settings`" />
+
+                <template v-if="selected.type === 'title' || selected.type === 'paragraph'">
+                  <v-textarea v-model="selected.text" label="Text" auto-grow rows="3" />
+                </template>
+                <template v-else-if="selected.type === 'list'">
+                  <v-textarea :model-value="selected ? listText(selected) : ''" @update:model-value="v => selected && setListText(selected, v)" label="Items (one per line)" auto-grow rows="3" />
+                </template>
+                <template v-else-if="selected.type === 'image'">
+                  <v-text-field v-model="selected.alt" label="Alt text" />
+                  <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
+                </template>
+                <template v-else-if="selected.type === 'button'">
+                  <v-text-field v-model="selected.label" label="Button label" />
+                  <v-text-field v-model="selected.url" label="Link URL" />
+                </template>
+                <template v-else-if="selected.type === 'spacer'">
+                  <v-slider v-model="selected.height" label="Height" :min="8" :max="96" :step="4" thumb-label />
+                </template>
+                <template v-else-if="selected.type === 'html'">
+                  <v-textarea v-model="selected.text" label="HTML" auto-grow rows="5" class="ece-mono" />
+                </template>
+                <template v-else>
+                  <div class="text-body-2 text-medium-emphasis">No content options for this block.</div>
+                </template>
+
+                <MpFormField v-if="['title', 'paragraph', 'button', 'social'].includes(selected.type)" label="Alignment">
+                  <div>
+                    <MpSegmentedControl
+                      :model-value="selected.align"
+                      :items="ALIGN_ITEMS"
+                      size="sm"
+                      ariaLabel="Alignment"
+                      @update:model-value="(v: string | null) => { if (selected && v) selected.align = v as EmailBlock['align'] }"
+                    />
+                  </div>
+                </MpFormField>
+
+                <div>
+                  <v-btn variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeBlock(selected.id)">Delete block</v-btn>
+                </div>
+              </MpFormGrid>
+            </template>
+            <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
+          </div>
+        </template>
+      </MpBuilderShell>
+
+      <MpBuilderPreviewDialog v-model="previewOpen" :title="`Preview — ${item.name}`">
+        <div class="ece-doc">
+          <template v-for="block in blocks" :key="`pv-${block.id}`">
+            <h2 v-if="block.type === 'title'" class="ece-title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
+            <p v-else-if="block.type === 'paragraph'" class="ece-paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
+            <ul v-else-if="block.type === 'list'" class="ece-list">
+              <li v-for="(li, i) in block.items" :key="i">{{ li }}</li>
+            </ul>
+            <div v-else-if="block.type === 'image'" class="ece-image">
+              <v-icon size="32">image</v-icon>
+              <span class="text-caption text-medium-emphasis">{{ block.alt || 'Image' }}</span>
+            </div>
+            <div v-else-if="block.type === 'button'" class="pa-2" :style="{ textAlign: block.align }">
+              <span class="ece-button">{{ block.label }}</span>
+            </div>
+            <hr v-else-if="block.type === 'divider'" class="ece-divider" />
+            <div v-else-if="block.type === 'spacer'" :style="{ height: `${block.height}px` }" />
+            <div v-else-if="block.type === 'social'" class="ece-social pa-2" :style="{ textAlign: block.align }">
+              <v-icon>facebook</v-icon><v-icon>instagram</v-icon><v-icon>twitter</v-icon><v-icon>linkedin</v-icon>
+            </div>
+            <pre v-else-if="block.type === 'html'" class="ece-html">{{ block.text }}</pre>
+          </template>
+        </div>
+      </MpBuilderPreviewDialog>
+
+      <MpConfirmDialog
+        v-model="confirmLeave"
+        danger
+        :title="leaveTitle"
+        :message="leaveMessage"
+        :confirm-label="leaveConfirmLabel"
+        @confirm="discardAndLeave"
+      />
+    </template>
+
+    <MpEmptyState
+      v-else
+      icon="file-x"
+      title="Content not found"
+      description="This email content doesn’t exist."
+      action-label="Back to Email Content"
+      action-icon="arrow-left"
+      class="my-auto"
+      @action="$router.push(backTo)"
+    />
+  </div>
+</template>
+
+<style scoped>
+/* Editor chrome (palette, canvas frame, block selection, floating controls) is on
+   tokens; the rendered email inside .ece-doc (.ece-title … .ece-html) is a
+   merchant-facing simulation and keeps its own literal type scale. */
+.ece-palette__item {
+  width: 100%;
+  padding: var(--mp-space-8) var(--mp-space-10);
+  border-radius: var(--mp-component-nav-itemRadius);
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.ece-palette__item:hover {
+  background: var(--surface-secondary);
+}
+.ece-palette__item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.ece-palette__add {
+  color: var(--on-surface-muted);
+  opacity: 0;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.ece-palette__item:hover .ece-palette__add,
+.ece-palette__item:focus-visible .ece-palette__add {
+  opacity: 1;
+}
+.ece-doc {
+  max-width: 600px; /* canonical email width */
+  width: 100%;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-16);
+  min-height: 400px;
+}
+.ece-block {
+  position: relative;
+  padding: var(--mp-space-10) var(--mp-space-12);
+  border: var(--mp-space-2) solid transparent;
+  border-radius: var(--mp-radius-8);
+  transition: border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.ece-block:hover {
+  border-color: var(--border-strong);
+}
+.ece-block--selected {
+  border-color: var(--accent-default);
+  background: var(--accent-soft);
+}
+.ece-block__controls {
+  position: absolute;
+  top: calc(-1 * var(--mp-space-14));
+  right: var(--mp-space-8);
+  display: none;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-8);
+  padding: var(--mp-space-2);
+}
+.ece-block:hover .ece-block__controls,
+.ece-block--selected .ece-block__controls,
+.ece-block:focus-within .ece-block__controls {
+  display: flex;
+}
+.ece-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgb(var(--v-theme-on-surface));
+}
+.ece-paragraph {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.ece-list {
+  padding-left: 20px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.ece-image {
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border-radius: 8px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.ece-button {
+  display: inline-block;
+  padding: 10px 24px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.ece-divider {
+  border: none;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  margin: 4px 0;
+}
+.ece-social {
+  display: flex;
+  gap: 12px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.ece-social[style*="center"] { justify-content: center; }
+.ece-social[style*="right"] { justify-content: flex-end; }
+.ece-html {
+  font-family: monospace;
+  font-size: 0.8rem;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  padding: 10px;
+  border-radius: 6px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  white-space: pre-wrap;
+}
+:deep(.ece-mono textarea) {
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-13);
+}
+</style>

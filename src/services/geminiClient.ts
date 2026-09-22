@@ -1,0 +1,55 @@
+// Client wrapper for the secure /api/gemini proxy. Sends only { text, history, context } —
+// the API key lives server-side and never reaches the browser. Returns null on any
+// failure (no key, network, provider error) so callers can degrade gracefully to
+// the canned fallback, mirroring how TTS falls back to the browser voice.
+
+export interface GeminiTurn {
+  role: 'user' | 'assistant'
+  text: string
+}
+
+export interface GeminiReply {
+  reply: string
+  speech: string
+  card?: { headline: string; description: string; severity?: 'info' | 'success' | 'warning' | 'error' }
+  /** One in-app destination for the card, allow-listed server-side (route name + verb-first label). */
+  action?: { label: string; routeName: string }
+}
+
+export interface AskGeminiOptions {
+  /** Compact live-workspace context block (current page, account, plan, dashboard). */
+  context?: string
+  /** Abort the in-flight request (copilot Stop button). */
+  signal?: AbortSignal
+  /** Server persona/grounding preset — 'design-system' for the docs assistant. */
+  mode?: 'default' | 'design-system'
+}
+
+export async function askGemini(
+  text: string,
+  history: GeminiTurn[] = [],
+  opts: AskGeminiOptions = {},
+): Promise<GeminiReply | null> {
+  try {
+    const resp = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, history, context: opts.context, mode: opts.mode }),
+      signal: opts.signal,
+    })
+    if (!resp.ok) return null
+    const data = (await resp.json()) as Partial<GeminiReply>
+    if (!data || typeof data.reply !== 'string' || !data.reply.trim()) return null
+    return {
+      reply: data.reply,
+      speech: typeof data.speech === 'string' && data.speech.trim() ? data.speech : data.reply,
+      card: data.card,
+      action: data.card && data.action?.label && data.action?.routeName ? data.action : undefined,
+    }
+  } catch (err) {
+    // A user-initiated Stop must not surface the canned fallback — rethrow so the
+    // caller's generation-guard can swallow it.
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    return null
+  }
+}

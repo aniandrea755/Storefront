@@ -1,0 +1,322 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useContentStore } from '@/stores/useContent'
+import { useSmsStore } from '@/stores/useSms'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
+
+const route = useRoute()
+const router = useRouter()
+const content = useContentStore()
+const store = useSmsStore()
+
+const accountId = computed(() => route.params.accountId as string)
+const backTo = computed(() => ({ name: 'TransactionalEmail', params: { accountId: accountId.value } }))
+
+const editId = ref<number | null>(null)
+const name = ref('')
+const subject = ref('')
+const fromName = ref('Maropost Store')
+const fromEmail = ref('hello@maropoststore.com')
+const replyTo = ref('support@maropoststore.com')
+const language = ref('English (US)')
+const contentId = ref<number | null>(null)
+const showPreviewLink = ref(false)
+const previewText = ref('')
+const brand = ref('Maropost')
+const tag = ref<string | null>(null)
+const address = ref('100 King St, Sydney NSW 2000')
+const toast = useToast()
+
+const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
+const BRAND_OPTIONS = ['Maropost', 'Storefront Co', 'Wholesale Division']
+const TAG_OPTIONS = ['Transactional', 'Onboarding', 'Billing', 'Shipping']
+const contentOptions = computed(() => content.items.map(i => ({ title: i.name, value: i.id })))
+
+const canCreate = computed(() => name.value.trim() !== '' && subject.value.trim() !== '')
+
+// ── Unsaved-changes guard ─────────────────────────────────────────────────────
+function serializeForm() {
+  return JSON.stringify([
+    name.value, subject.value, previewText.value, fromName.value, fromEmail.value,
+    replyTo.value, language.value, contentId.value, showPreviewLink.value,
+    brand.value, tag.value, address.value,
+  ])
+}
+const savedSnapshot = ref(serializeForm())
+const isDirty = computed(() => serializeForm() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave transactional email?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
+function create() {
+  if (!canCreate.value) return
+  const input = {
+    name: name.value.trim(),
+    subject: subject.value.trim(),
+    preheader: previewText.value,
+    fromName: fromName.value,
+    fromEmail: fromEmail.value,
+    replyTo: replyTo.value,
+    language: language.value,
+    contentId: contentId.value,
+    showPreviewLink: showPreviewLink.value,
+    brand: brand.value,
+    tag: tag.value ?? '',
+    address: address.value,
+  }
+  if (editId.value != null) {
+    store.updateTransactionalEmail(editId.value, input)
+  } else {
+    store.createTransactionalEmail(input)
+  }
+  savedSnapshot.value = serializeForm()
+  toast.success(editId.value != null ? 'Transactional email updated' : 'Transactional email created')
+  allowNextLeave()
+  setTimeout(() => router.push(backTo.value), 700)
+}
+
+onMounted(() => {
+  const idParam = route.query.id
+  if (!idParam) return
+  const existing = store.getTransactionalEmail(Number(idParam))
+  if (!existing) return
+  editId.value = existing.id
+  name.value = existing.name
+  subject.value = existing.subject
+  previewText.value = existing.preheader
+  fromName.value = existing.fromName
+  fromEmail.value = existing.fromEmail
+  replyTo.value = existing.replyTo
+  language.value = existing.language
+  contentId.value = existing.contentId
+  showPreviewLink.value = existing.showPreviewLink
+  brand.value = existing.brand
+  tag.value = existing.tag || null
+  address.value = existing.address
+  savedSnapshot.value = serializeForm()
+})
+
+const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Email' : 'New Transactional Email'))
+</script>
+
+<template>
+  <div class="mp-frame-fill d-flex flex-column">
+    <div class="px-8 pt-6 pb-4 bg-surface page-head">
+      <MpPageHeader :title="pageTitle" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
+    </div>
+
+    <div class="flex-grow-1 overflow-y-auto px-8 py-6 bg-background">
+      <div class="cte-grid mx-auto">
+        <!-- Form -->
+        <div class="d-flex flex-column gap-5">
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">info</v-icon>
+              <span class="mp-section-title">Details</span>
+            </div>
+            <MpFormGrid>
+              <v-text-field
+                v-model="name"
+                label="Transactional event name"
+                placeholder="e.g. Order Confirmation"
+                :rules="[v => !!v || 'Name is required']"
+              />
+              <v-text-field
+                v-model="subject"
+                label="Subject line"
+                placeholder="Your order is confirmed 🎉"
+                counter
+              />
+              <v-text-field
+                v-model="previewText"
+                label="Preview text"
+                placeholder="Shown after the subject line in the inbox"
+                :counter="100"
+                maxlength="100"
+                hint="The snippet inboxes show right after the subject"
+                persistent-hint
+              />
+            </MpFormGrid>
+          </v-card>
+
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">user</v-icon>
+              <span class="mp-section-title">Sender</span>
+            </div>
+            <MpFormGrid :cols="2">
+              <v-text-field v-model="fromName" label="From name" />
+              <v-text-field v-model="fromEmail" label="From address" />
+              <v-text-field v-model="replyTo" label="Reply-to address" />
+              <v-select v-model="language" label="Language" :items="LANGUAGES" />
+            </MpFormGrid>
+          </v-card>
+
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">file-text</v-icon>
+              <span class="mp-section-title">Content</span>
+            </div>
+            <MpFormGrid :cols="2">
+              <v-select
+                v-model="contentId"
+                label="Content"
+                :items="contentOptions"
+                placeholder="Choose a saved template"
+                clearable
+              />
+              <v-switch v-model="showPreviewLink" label="Show email preview link" />
+              <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" />
+              <v-combobox v-model="tag" label="Campaign tag" :items="TAG_OPTIONS" clearable />
+              <v-text-field v-model="address" class="mp-form-grid__full" label="Address" />
+            </MpFormGrid>
+          </v-card>
+        </div>
+
+        <!-- Live inbox preview -->
+        <aside class="cte-preview">
+          <div class="cte-preview__sticky">
+            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Inbox preview</div>
+            <div class="mail">
+              <div class="mail__unread" />
+              <div class="mail__avatar">{{ (fromName.trim()[0] || 'M').toUpperCase() }}</div>
+              <div class="mail__body">
+                <div class="mail__top">
+                  <span class="mail__from text-truncate">{{ fromName.trim() || 'Sender name' }}</span>
+                  <span class="mail__time">now</span>
+                </div>
+                <div class="mail__subject text-truncate">{{ subject.trim() || 'Subject line' }}</div>
+                <div class="mail__preview text-truncate">{{ previewText.trim() || 'Preview text appears here after the subject.' }}</div>
+              </div>
+            </div>
+
+            <div class="mailopen">
+              <div class="mailopen__subject">{{ subject.trim() || 'Subject line' }}</div>
+              <div class="mailopen__meta">{{ fromName.trim() || 'Sender name' }} &lt;{{ fromEmail.trim() || 'sender@store.com' }}&gt;</div>
+              <div class="mailopen__body">
+                <span style="width: 92%" /><span style="width: 80%" /><span style="width: 88%" /><span style="width: 60%" />
+              </div>
+            </div>
+
+            <div class="cte-preview__note">
+              <v-icon size="13">zap</v-icon>
+              Triggers on: <strong>{{ name.trim() || 'your event' }}</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="px-8 py-4 bg-surface page-foot d-flex justify-end ga-3">
+      <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
+      <v-btn color="primary" variant="flat" class="text-none" :disabled="!canCreate" prepend-icon="check" @click="create">
+        {{ editId != null ? 'Save changes' : 'Create transactional email' }}
+      </v-btn>
+    </div>
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
+  </div>
+</template>
+
+<style scoped>
+.cte-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--mp-space-24);
+  max-width: 1040px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .cte-grid { grid-template-columns: 1fr; }
+  .cte-preview { display: none; }
+}
+.cte-preview__sticky { position: sticky; top: 0; }
+.page-head { border-bottom: 1px solid var(--border-subtle); }
+.page-foot { border-top: 1px solid var(--border-subtle); }
+
+/* Inbox preview */
+.mail {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-14) var(--mp-space-14) var(--mp-space-14) var(--mp-space-20);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-radius-12);
+}
+.mail__unread {
+  position: absolute;
+  left: var(--mp-space-8);
+  top: var(--mp-space-20);
+  width: var(--mp-space-6);
+  height: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  background: rgb(var(--v-theme-primary));
+}
+.mail__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
+  font-weight: var(--mp-fontWeight-bold);
+  font-size: 0.875rem;
+}
+.mail__body { min-width: 0; flex: 1 1 auto; }
+.mail__top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mp-space-8); }
+.mail__from { font-weight: var(--mp-fontWeight-bold); font-size: var(--mp-fontSize-13); }
+.mail__time { font-size: var(--mp-fontSize-11); color: var(--on-surface-muted); flex-shrink: 0; }
+.mail__subject { font-size: var(--mp-fontSize-13); font-weight: var(--mp-fontWeight-semibold); margin-top: 1px; }
+.mail__preview { font-size: var(--mp-fontSize-12); color: var(--on-surface-muted); margin-top: 1px; }
+
+.mailopen {
+  margin-top: var(--mp-space-12);
+  padding: var(--mp-space-16);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-radius-12);
+}
+.mailopen__subject { font-size: var(--mp-fontSize-15); font-weight: var(--mp-fontWeight-bold); line-height: 1.3; }
+.mailopen__meta { font-size: var(--mp-fontSize-11); color: var(--on-surface-muted); margin-top: var(--mp-space-4); margin-bottom: var(--mp-space-14); }
+.mailopen__body { display: flex; flex-direction: column; gap: var(--mp-space-8); }
+.mailopen__body span {
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-4);
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  display: block;
+}
+.cte-preview__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.cte-preview__note :deep(.v-icon) { color: rgb(var(--v-theme-primary)); }
+</style>

@@ -1,0 +1,512 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useCommerceStore, type InventoryItem } from '@/stores/useCommerce'
+import { useRetailStore } from '@/stores/useRetail'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+
+const store = useCommerceStore()
+const route = useRoute()
+const router = useRouter()
+const search = ref('')
+const { loading } = useInitialLoad()
+const toast = useToast()
+
+/**
+ * One inventory surface, three lenses: the SKU list, a per-location pivot
+ * (what Retail used to call "Stock by location"), and the bulk import history.
+ */
+type InventoryView = 'list' | 'locations' | 'imports'
+const VIEW_TABS: { label: string; key: InventoryView }[] = [
+  { label: 'All stock', key: 'list' },
+  { label: 'By location', key: 'locations' },
+  { label: 'Imports', key: 'imports' },
+]
+const view = computed<InventoryView>(() => {
+  const v = route.query.view
+  return v === 'locations' || v === 'imports' ? v : 'list'
+})
+function setView(next: string) {
+  router.replace({ query: next === 'list' ? {} : { view: next } })
+}
+
+// Locations are shared with Retail: stores and warehouses in one keyspace.
+const retail = useRetailStore()
+const locationOptions = computed(() => retail.locationList.map((l) => ({ id: l.id, name: l.name, kind: l.kind })))
+const locationName = (id: string) => retail.locationName(id)
+
+// KPI breakdown — computed from live inventory slice
+const kpis = computed(() => [
+  { label: 'Total Units', value: store.inventory.reduce((sum, i) => sum + i.inventory, 0).toLocaleString(), icon: 'library', color: 'primary' },
+  { label: 'In Stock', value: store.inventory.filter(i => i.status === 'In Stock').length, icon: 'circle-check', color: 'success' },
+  { label: 'Low Stock', value: store.inventory.filter(i => i.status === 'Low Stock').length, icon: 'alert-triangle', color: 'warning' },
+  { label: 'Out of Stock', value: store.inventory.filter(i => i.status === 'Out of Stock').length, icon: 'circle-x', color: 'error' },
+])
+
+// Multi-select filters
+// Status is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['In Stock', 'Low Stock', 'Out of Stock'].map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
+
+const filters = ref({
+  location: [] as string[],
+})
+
+const filterOptions = computed(() => ({
+  location: locationOptions.value.map((l) => l.name),
+}))
+
+const filterLabels: Record<string, string> = {
+  location: 'Location',
+}
+
+const activeFilterEntries = computed(() => {
+  const entries = Object.entries(filters.value)
+    .filter(([, v]) => v.length > 0)
+    .map(([key, value]) => ({
+      key,
+      label: `${filterLabels[key]}: ${(value as string[]).join(', ')}`,
+    }))
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
+})
+
+function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
+  filters.value[key as keyof typeof filters.value] = []
+}
+
+function clearAllFilters() {
+  statusFilter.value = []
+  filters.value = { location: [] }
+}
+
+const filteredInventory = computed(() => {
+  let items = store.inventory
+  if (filters.value.location.length) items = items.filter(p => filters.value.location.includes(locationName(p.locationId)))
+  if (statusFilter.value.length) items = items.filter(p => statusFilter.value.includes(p.status))
+  return items
+})
+
+const headers = [
+  { title: 'Product', key: 'name', sortable: true, minWidth: '260px' },
+  { title: 'Avail. Inventory', key: 'inventory', align: 'end' as const, sortable: true },
+  { title: 'On Order / Incoming', key: 'incoming', align: 'end' as const, sortable: true, hideBelow: 'lg' as const },
+  { title: 'Status', key: 'status', hideBelow: 'sm' as const },
+  { title: 'Location', key: 'locationId', hideBelow: 'md' as const },
+  { title: '', key: 'actions', sortable: false, width: 48 },
+]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+
+// ── Adjust Stock drawer ─────────────────────────────────────────────
+const adjustDrawer = ref(false)
+const adjustItem = ref<InventoryItem | null>(null)
+const adjustMode = ref<'set' | 'delta'>('set')
+const ADJUST_MODES = [
+  { value: 'set', label: 'Set new count' },
+  { value: 'delta', label: 'Adjust by +/−' },
+]
+const adjustValue = ref(0)
+const adjustReason = ref('Recount')
+const REASONS = ['Recount', 'Received shipment', 'Damaged / shrinkage', 'Customer return', 'Correction']
+
+function openAdjust(item: InventoryItem) {
+  adjustItem.value = item
+  adjustMode.value = 'set'
+  adjustValue.value = item.inventory
+  adjustReason.value = 'Recount'
+  adjustDrawer.value = true
+}
+
+const adjustPreview = computed(() => {
+  if (!adjustItem.value) return 0
+  return adjustMode.value === 'set'
+    ? Math.max(0, Number(adjustValue.value) || 0)
+    : Math.max(0, adjustItem.value.inventory + (Number(adjustValue.value) || 0))
+})
+
+function saveAdjust() {
+  if (adjustItem.value) {
+    store.adjustStock(adjustItem.value.id, adjustPreview.value)
+    toast.success('Stock adjusted')
+  }
+  adjustDrawer.value = false
+}
+
+// ── Transfer drawer ─────────────────────────────────────────────────
+const transferDrawer = ref(false)
+const transferItem = ref<InventoryItem | null>(null)
+const transferTo = ref('')
+const transferQty = ref(1)
+
+function openTransfer(item: InventoryItem) {
+  transferItem.value = item
+  transferTo.value = locationOptions.value.find(l => l.id !== item.locationId)?.id ?? item.locationId
+  transferQty.value = 1
+  transferDrawer.value = true
+}
+
+const transferOptions = computed(() =>
+  locationOptions.value
+    .filter(l => l.id !== transferItem.value?.locationId)
+    .map(l => ({ title: l.name, value: l.id })),
+)
+
+function saveTransfer() {
+  if (transferItem.value && transferTo.value) {
+    store.transferStock(transferItem.value.id, transferTo.value, transferQty.value)
+    toast.success(`Moved ${transferQty.value} to ${locationName(transferTo.value)}`)
+  }
+  transferDrawer.value = false
+}
+
+/** Rows for the per-location pivot: one row per SKU, one column per location. */
+interface PivotRow {
+  id: number
+  name: string
+  sku: string
+  total: number
+  /** One entry per location id. */
+  [locationId: string]: string | number
+}
+
+const pivotRows = computed<PivotRow[]>(() =>
+  filteredInventory.value.map((item) => ({
+    id: item.id,
+    name: item.name,
+    sku: item.sku,
+    total: item.inventory,
+    ...Object.fromEntries(locationOptions.value.map((l) => [l.id, item.stockByLocation[l.id] ?? 0])),
+  })),
+)
+
+const pivotHeaders = computed(() => [
+  { title: 'Product', key: 'name', sortable: true },
+  ...locationOptions.value.map((l) => ({ title: l.name, key: l.id, align: 'end' as const, sortable: true })),
+  { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
+])
+
+const importHeaders = [
+  { title: 'File', key: 'fileName' },
+  { title: 'Rows changed', key: 'rowsChanged', align: 'end' as const },
+  { title: 'Reason', key: 'reason' },
+  { title: 'User', key: 'user' },
+  { title: 'When', key: 'at' },
+  { title: 'Status', key: 'status' },
+]
+
+/** Low/none stock emphasis for a pivot cell. */
+function cellClass(qty: number): string {
+  if (qty === 0) return 'text-error font-weight-bold'
+  if (qty < 5) return 'inventory-low font-weight-medium'
+  return ''
+}
+
+const importDateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const formatImportDate = (iso: string) => importDateFmt.format(new Date(iso))
+
+// ── Export ──────────────────────────────────────────────────────────
+function exportInventory() {
+  downloadCsv('inventory', filteredInventory.value, [
+    { title: 'Product', value: 'name' },
+    { title: 'SKU', value: 'sku' },
+    { title: 'Available', value: 'inventory' },
+    { title: 'Incoming', value: 'incoming' },
+    { title: 'Status', value: 'status' },
+    { title: 'Location', value: (row: InventoryItem) => locationName(row.locationId) },
+  ])
+}
+
+</script>
+
+<template>
+  <div class="h-100 d-flex flex-column gap-5">
+    <MpPageHeader
+      title="Inventory"
+      :subtitle="`${store.inventory.length} SKUs across ${locationOptions.length} locations`"
+    >
+      <template #actions>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportInventory">Export</v-btn>
+      </template>
+    </MpPageHeader>
+
+    <MpFilterTabs :model-value="view" :tabs="VIEW_TABS" aria-label="Inventory views" @update:model-value="setView" />
+
+    <v-row dense>
+      <v-col v-for="kpi in kpis" :key="kpi.label" cols="6" md="3">
+        <MpKpiCard :label="kpi.label" :value="kpi.value" :icon="kpi.icon" :color="kpi.color" />
+      </v-col>
+    </v-row>
+
+    <v-card v-if="view === 'list'" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
+        title="Inventory Items"
+        v-model:search="search"
+        :active-filters="activeFilterEntries"
+        :total-count="filteredInventory.length"
+        @remove-filter="removeFilter"
+        @clear-filters="clearAllFilters"
+      >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
+        <template #filter-content>
+          <MpFormGrid>
+            <v-select
+              v-model="filters.location"
+              :items="filterOptions.location"
+              label="Location"
+              multiple
+              chips
+              closable-chips
+              hide-details
+              placeholder="All"
+            />
+          </MpFormGrid>
+        </template>
+      </MpDataTableToolbar>
+
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
+      <v-data-table
+        v-else
+        :headers="visibleHeaders"
+        :items="filteredInventory"
+        :search="search"
+        :items-per-page="15"
+        hover
+        density="comfortable"
+        fixed-header
+        class="flex-grow-1"
+      >
+        <template v-slot:item.name="{ item }">
+          <div class="d-flex align-center gap-3 py-2">
+            <v-avatar :size="32" rounded="lg" class="border flex-shrink-0">
+              <v-img :src="`https://picsum.photos/seed/${item.id}/32/32`" cover alt="">
+                <template #error>
+                  <div class="inventory-thumb-fallback"><v-icon size="16">image</v-icon></div>
+                </template>
+              </v-img>
+            </v-avatar>
+            <div>
+              <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
+              <div class="text-caption text-medium-emphasis">{{ item.sku }}</div>
+            </div>
+          </div>
+        </template>
+
+        <template v-slot:item.inventory="{ item }">
+          <span class="num" :class="item.inventory === 0 ? 'text-error font-weight-bold' : item.inventory < 20 ? 'inventory-low font-weight-bold' : 'font-weight-medium'">{{ item.inventory }}</span>
+        </template>
+
+        <template v-slot:item.incoming="{ item }">
+          <span v-if="item.incoming > 0" class="num text-medium-emphasis d-inline-flex align-center ga-1">
+            <v-icon size="16" color="info">truck</v-icon>{{ item.incoming }}
+          </span>
+          <span v-else class="text-disabled">—</span>
+        </template>
+
+        <template v-slot:item.status="{ item }">
+          <MpStatusChip :status="item.status" type="stock" show-icon />
+        </template>
+
+        <template v-slot:item.locationId="{ item }">
+          <div class="d-flex align-center gap-2">
+            <v-icon size="16" class="text-medium-emphasis">map-pin</v-icon>
+            <span class="text-body-2">{{ locationName(item.locationId) }}</span>
+          </div>
+        </template>
+
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Inventory item actions" :itemLabel="item.name">
+            <MpMenuItem icon="pencil" title="Adjust Stock" @click="openAdjust(item)" />
+            <MpMenuItem icon="arrow-left-right" title="Transfer" @click="openTransfer(item)" />
+          </MpRowActionsMenu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="package"
+            :title="search ? 'No items match your search' : 'No inventory items'"
+            :description="search ? 'Try a different search term or clear your filters.' : 'Your product inventory will appear here once products are added to your store.'"
+          />
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <!-- Per-location pivot: what Retail called "Stock by location". -->
+    <v-card v-else-if="view === 'locations'" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar
+        title="Stock by location"
+        v-model:search="search"
+        :total-count="pivotRows.length"
+      />
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="locationOptions.length + 2" />
+      <v-data-table
+        v-else
+        :headers="pivotHeaders"
+        :items="pivotRows"
+        :search="search"
+        item-value="id"
+        density="comfortable"
+        class="mp-table"
+      >
+        <template v-slot:item.name="{ item }">
+          <div>
+            <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
+            <div class="text-caption text-medium-emphasis">{{ item.sku }}</div>
+          </div>
+        </template>
+
+        <template v-for="loc in locationOptions" :key="loc.id" v-slot:[`item.${loc.id}`]="{ item }">
+          <span class="num" :class="cellClass(Number(item[loc.id] ?? 0))">{{ item[loc.id] }}</span>
+        </template>
+
+        <template v-slot:item.total="{ item }">
+          <span class="num font-weight-bold">{{ item.total }}</span>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState icon="boxes" title="No stock to show" description="Stock levels appear here once products are stocked at a location." />
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <!-- Bulk stock updates, formerly Retail > Bulk inventory. -->
+    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar title="Stock imports" :total-count="store.inventoryImports.length">
+        <template #actions>
+          <v-btn color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="toast.success('CSV upload is not wired up in the prototype')">Upload CSV</v-btn>
+        </template>
+      </MpDataTableToolbar>
+      <v-data-table
+        :headers="importHeaders"
+        :items="store.inventoryImports"
+        item-value="id"
+        density="comfortable"
+        class="mp-table"
+      >
+        <template v-slot:item.at="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ formatImportDate(item.at) }}</span>
+        </template>
+        <template v-slot:item.status="{ item }">
+          <MpStatusChip :status="item.status === 'completed' ? 'Completed' : item.status === 'partial' ? 'Partial' : 'Failed'" type="general" size="sm" />
+        </template>
+        <template v-slot:no-data>
+          <MpEmptyState icon="upload" title="No imports yet" description="Bulk stock updates you run will be listed here." />
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <!-- Adjust Stock drawer -->
+    <MpFormDrawer
+      v-model="adjustDrawer"
+      title="Adjust Stock"
+      :subtitle="adjustItem?.name"
+    >
+      <MpFormGrid>
+        <v-text-field
+          :model-value="adjustItem ? locationName(adjustItem.locationId) : ''"
+          label="Location"
+          readonly
+          class="mp-field-readonly"
+          prepend-inner-icon="map-pin"
+        />
+        <MpFormField label="Adjustment mode">
+          <MpSegmentedControl v-model="adjustMode" :items="ADJUST_MODES" ariaLabel="Adjustment mode" />
+        </MpFormField>
+        <v-text-field
+          v-model.number="adjustValue"
+          :label="adjustMode === 'set' ? 'New count' : 'Change (e.g. -5 or 20)'"
+          type="number"
+        />
+        <v-select v-model="adjustReason" :items="REASONS" label="Reason" />
+      </MpFormGrid>
+      <!-- Genuine status preview tile — stays tonal; inset from the card token, not a pa-* utility. -->
+      <v-card variant="tonal" color="primary" rounded="lg" class="inventory-adjust-preview d-flex align-center justify-space-between">
+        <div>
+          <div class="text-caption text-medium-emphasis">New available</div>
+          <div class="text-h5 font-weight-bold">{{ adjustPreview }}</div>
+        </div>
+        <div class="text-caption text-medium-emphasis">was {{ adjustItem?.inventory ?? 0 }}</div>
+      </v-card>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="adjustDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveAdjust">Save Adjustment</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Transfer drawer -->
+    <MpFormDrawer
+      v-model="transferDrawer"
+      title="Transfer Stock"
+      :subtitle="transferItem?.name"
+    >
+      <MpFormGrid>
+        <v-text-field
+          :model-value="transferItem ? locationName(transferItem.locationId) : ''"
+          label="From location"
+          readonly
+          class="mp-field-readonly"
+          prepend-inner-icon="map-pin"
+        />
+        <v-select v-model="transferTo" :items="transferOptions" label="To location *" prepend-inner-icon="map-pin" />
+        <v-text-field v-model.number="transferQty" label="Quantity" type="number" min="1" />
+      </MpFormGrid>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="transferDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="arrow-left-right" :disabled="!transferTo" @click="saveTransfer">Transfer</v-btn>
+      </template>
+    </MpFormDrawer>
+  </div>
+</template>
+
+<style scoped>
+.inventory-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
+}
+
+/* Warm soft-surface ink, not the raw warning hue — low-stock counts have to pass on white. */
+.inventory-low {
+  color: var(--warn-ink);
+}
+
+.inventory-adjust-preview {
+  padding: var(--mp-component-card-padding);
+}
+</style>

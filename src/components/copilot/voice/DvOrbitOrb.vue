@@ -1,0 +1,145 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { createMarkOrb, type MarkOrbHandle } from '@/lib/davinci-orb/mark'
+
+// "Glow Mist Medium" particle-orb identity mark — canvas renderer (the finalized
+// stakeholder design). A dense even halo RING + soft tapered SCATTER on one slow
+// CCW spin (~20s), with the brand spectral glints drifting + twinkling on top.
+// Ink colour comes from `currentColor` via CSS (--dv-ink · --inverse · --dim), so
+// the engine just reads the inherited `color`. Pure canvas + a CSS breathe.
+const props = withDefaults(
+  defineProps<{
+    size: number
+    /** Spin-speed multiplier: listening 2.4 · thinking 1.6 · strip 1.4 · keyboard/error 0.6 · paused 0.25 */
+    speed?: number
+    /** Slate mark, no breathe, no glints (error/paused) */
+    dim?: boolean
+    /** Monochrome conic arc sweep outside the orb (thinking) */
+    arc?: boolean
+    /** White mark for dark or gradient backgrounds */
+    inverse?: boolean
+  }>(),
+  { speed: 1, dim: false, arc: false, inverse: false },
+)
+
+// All in-app marks render larger than their passed `size` (brand bump + the
+// stakeholder's +20%). renderSize drives the element box; the canvas fills it.
+const renderSize = computed(() => props.size * 1.44)
+const breatheDuration = computed(() => `${7 / Math.min(props.speed, 1.5)}s`)
+
+const canvasEl = ref<HTMLCanvasElement | null>(null)
+let handle: MarkOrbHandle | null = null
+
+onMounted(() => {
+  if (!canvasEl.value) return
+  handle = createMarkOrb(canvasEl.value, {
+    speed: props.speed,
+    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  })
+})
+
+onBeforeUnmount(() => {
+  handle?.destroy()
+  handle = null
+})
+
+watch(
+  () => props.speed,
+  (s) => handle?.setSpeed(s),
+)
+// `dim`/`inverse` only change colour (slate / white) and stop breathe — handled
+// by the --dim/--inverse CSS classes; the engine reads the inherited `color`, so
+// no JS wiring is needed.
+</script>
+
+<template>
+  <div
+    class="dv-orbit-orb"
+    :class="{ 'dv-orbit-orb--dim': dim, 'dv-orbit-orb--inverse': inverse }"
+    :style="{ width: `${renderSize}px`, height: `${renderSize}px` }"
+    aria-hidden="true"
+  >
+    <div v-if="arc" class="dv-orbit-orb__arc"></div>
+    <canvas ref="canvasEl" class="dv-orbit-orb__canvas" :style="{ animationDuration: breatheDuration }"></canvas>
+  </div>
+</template>
+
+<style scoped>
+.dv-orbit-orb {
+  position: relative;
+  flex: none;
+  /* --dv-ink is always set globally (dv-tokens.css, in the app-styles.ts manifest) —
+     no fallback needed. --dv-orb-mask-stop has no existing token (it's a mask-image
+     luminance stop, not a visual color — CSS masks read alpha/luminance, so giving
+     it a themed color would be semantically wrong; kept local and literal). The
+     `--dv-orb-dim` this block used to define locally was an exact duplicate of
+     dv-tokens.css's --dv-orbit-muted (#94a3b8 light) — removed in favor of that
+     token directly below, which also gains a real dark-mode value (#64748B) this
+     local duplicate never had. */
+  --dv-orb-mask-stop: #000;
+  color: var(--dv-ink);
+}
+
+/* The canvas fills the box; `color` is inherited and read by the engine for the
+   dot ink. Breathe is a barely-there scale pulse (GPU, asymmetric inhale/exhale). */
+.dv-orbit-orb__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: dv-orbit-breath ease-in-out infinite;
+}
+
+@keyframes dv-orbit-breath {
+  0% {
+    transform: scale(0.97);
+    opacity: 0.88;
+  }
+  42% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.97);
+    opacity: 0.88;
+  }
+}
+
+/* Thinking sweep — monochrome conic arc orbiting outside the mark */
+.dv-orbit-orb__arc {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 250deg,
+    currentColor 330deg,
+    transparent 360deg
+  );
+  opacity: 0.75;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), var(--dv-orb-mask-stop) calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), var(--dv-orb-mask-stop) calc(100% - 3px));
+  animation: dv-orbit-spin 1.3s linear infinite;
+}
+
+/* Dim — slate mark, breathe stilled (error/paused) */
+.dv-orbit-orb--dim {
+  color: var(--dv-orbit-muted);
+}
+
+.dv-orbit-orb--dim .dv-orbit-orb__canvas {
+  animation: none;
+}
+
+/* Inverse — white mark for dark or gradient backgrounds */
+.dv-orbit-orb--inverse {
+  color: var(--dv-orbit-on-fill);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-orbit-orb__canvas,
+  .dv-orbit-orb__arc {
+    animation: none;
+  }
+}
+</style>
