@@ -30,6 +30,10 @@ npm run storybook
 
 Storybook runs on http://localhost:6006.
 
+## Dashboards (separate repo)
+
+Dashboard hub, widget grid, commerce overview / campaign analytics navigation, and related Storybook stories live in **[maropost-dashboard](https://github.com/aniandrea755/maropost-dashboard)** — a sibling repository extracted from this project. Use that repo for dashboard-focused work; this monolith still includes the same routes for now.
+
 ## What's inside
 
 - **29 top-level `Mp*` components** plus 9 domain component folders (copilot, dashboards, layout, marketing, merchandising, plg, rbac, saleschannels, settings) — 82 component files in total

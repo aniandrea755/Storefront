@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
+import { dashboardSidebarItems, defaultDashboardRoute } from '@/stores/dashboards/dashboardNav'
 import { usePlgStore } from '@/stores/usePlg'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { Crown } from 'lucide-vue-next'
@@ -59,20 +60,17 @@ interface InstalledAppItem {
   route: string
 }
 
-function buildNavGroups(accountId: string): NavGroup[] {
+function buildNavGroups(accountId: string, subscriptions: SubscriptionKey[]): NavGroup[] {
   const onlineSalesRoute = `/accounts/${accountId}/sales_channels?tab=web_store`
   const offlinePhysicalRoute = `/accounts/${accountId}/sales_channels?tab=offline_store`
+  const dashboardItems = dashboardSidebarItems(accountId, subscriptions)
 
   return [
     {
       title: 'Dashboards',
       icon: 'layout-dashboard',
-      singleRoute: `/accounts/${accountId}/dashboard`,
-      items: [
-        { title: 'Home', route: `/accounts/${accountId}/dashboard` },
-        { title: 'Manage', route: `/accounts/${accountId}/dashboards` },
-        { title: 'Live', route: `/accounts/${accountId}/analytics/live_view` },
-      ],
+      singleRoute: defaultDashboardRoute(accountId, subscriptions),
+      items: dashboardItems,
     },
     {
       title: 'Analytics',
@@ -290,7 +288,16 @@ const resolvedAccountId = computed(() => {
   const isRealAccount = routeAccountId && accountsStore.accounts.some((a) => a.id === routeAccountId)
   return isRealAccount ? routeAccountId : accountsStore.activeId
 })
-const navGroups = computed(() => buildNavGroups(resolvedAccountId.value))
+const navGroups = computed(() => {
+  const account = accountsStore.accounts.find((entry) => entry.id === resolvedAccountId.value)
+  const subscriptions = account?.subscriptions ?? ['marketing']
+  return buildNavGroups(resolvedAccountId.value, subscriptions)
+})
+
+const defaultDashboardLink = computed(() => {
+  const account = accountsStore.accounts.find((entry) => entry.id === resolvedAccountId.value)
+  return defaultDashboardRoute(resolvedAccountId.value, account?.subscriptions ?? ['marketing'])
+})
 const flyoutGroup = computed(() =>
   flyoutGroupTitle.value
     ? navGroups.value.find((group) => group.title === flyoutGroupTitle.value) ?? null
@@ -572,7 +579,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           type="button"
           class="sidebar-brand"
           aria-label="Go to dashboard"
-          @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+          @click="goTo(defaultDashboardLink)"
         >
           <div class="rail-brand-box" aria-hidden="true">M</div>
           <span class="sidebar-brand__logo" v-html="maropostLogo" />
@@ -584,7 +591,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           type="button"
           class="sidebar-brand sidebar-brand--rail"
           aria-label="Go to dashboard"
-          @click.stop="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+          @click.stop="goTo(defaultDashboardLink)"
         >
           <div class="rail-brand-box">M</div>
         </button>

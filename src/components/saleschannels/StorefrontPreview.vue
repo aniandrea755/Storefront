@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import lumosHomepage from '@/assets/storefront/lumos/homepage.jpg'
+import ChildCollectionTiles from '@/components/saleschannels/ChildCollectionTiles.vue'
+import LumosCollectionsPage from '@/components/saleschannels/LumosCollectionsPage.vue'
+import LumosSearchResultsPage from '@/components/saleschannels/LumosSearchResultsPage.vue'
+import LumosBlogsPage from '@/components/saleschannels/LumosBlogsPage.vue'
+import LumosProductPage from '@/components/saleschannels/LumosProductPage.vue'
+import type { HeaderPreviewLayer } from '@/components/saleschannels/lumosHeaderLayers'
+import type { FooterPreviewLayer } from '@/components/saleschannels/lumosFooterLayers'
 import { getBlockDef, type ThemeBlock, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 
 const props = withDefaults(defineProps<{
@@ -7,6 +15,8 @@ const props = withDefaults(defineProps<{
   sections?: ThemeSection[]
   /** Theme style overrides, applied as CSS vars on the preview root. */
   styles?: Partial<ThemeStyles>
+  /** Render a Lumos Figma frame instead of the Atlas/section mocks. */
+  homepage?: 'lumos' | 'lumos-collection' | 'lumos-search' | 'lumos-product' | 'lumos-blogs' | 'default'
   /** Constrains the inner viewport width (desktop full, tablet ~768, mobile ~390). */
   device?: 'desktop' | 'tablet' | 'mobile'
   /** Hover outline + click-to-select on sections. */
@@ -19,21 +29,39 @@ const props = withDefaults(defineProps<{
   pendingIds?: string[]
   /** Block ids just added — get a transient "New" cue. */
   pendingBlockIds?: string[]
+  /** Parent collection whose children fill a Categories section. */
+  collectionTitle?: string
+  /** Header rail is active — hide “Edit Header” chrome on the canvas. */
+  headerEditActive?: boolean
+  /** Selected header sub-layer while editing header. */
+  selectedHeaderLayer?: HeaderPreviewLayer | null
+  footerEditActive?: boolean
+  selectedFooterLayer?: FooterPreviewLayer | null
 }>(), {
   sections: undefined,
   styles: undefined,
+  homepage: 'default',
   device: 'desktop',
   interactive: false,
   selectedId: null,
   selectedBlockId: null,
   pendingIds: () => [],
   pendingBlockIds: () => [],
+  collectionTitle: 'Bedroom Collections',
+  headerEditActive: false,
+  selectedHeaderLayer: null,
+  footerEditActive: false,
+  selectedFooterLayer: null,
 })
 
 const emit = defineEmits<{
   select: [id: string]
   selectBlock: [sectionId: string, blockId: string]
   hover: [id: string | null]
+  'edit-header': []
+  'select-header-layer': [layer: HeaderPreviewLayer]
+  'edit-footer': []
+  'select-footer-layer': [layer: FooterPreviewLayer]
 }>()
 
 const visibleSections = computed(() => props.sections?.filter((section) => !section.hidden) ?? [])
@@ -55,10 +83,172 @@ const styleVars = computed(() => {
   return vars
 })
 
+const lumosShot = computed(() => {
+  if (props.homepage === 'lumos') return { src: lumosHomepage, alt: 'Lumos homepage' }
+  return null
+})
+
+const showLumos = computed(() => (
+  props.homepage === 'lumos'
+  || props.homepage === 'lumos-collection'
+  || props.homepage === 'lumos-search'
+  || props.homepage === 'lumos-product'
+  || props.homepage === 'lumos-blogs'
+))
+
+const lumosHeader = computed(() => visibleSections.value.find((section) => section.kind === 'header'))
+const lumosAnnouncement = computed(() => props.sections?.find((section) => section.kind === 'announcement-bar'))
+const lumosAnnouncementSettings = computed(() => ({ ...(lumosAnnouncement.value?.settings ?? {}) }))
+const lumosHeaderSettings = computed(() => ({ ...(lumosHeader.value?.settings ?? {}) }))
+const showLumosAnnouncement = computed(() =>
+  Boolean(lumosAnnouncement.value && !lumosAnnouncement.value.hidden),
+)
+const lumosCollections = computed(() => {
+  const sections = visibleSections.value
+  return sections.find((section) => section.kind === 'categories')
+    ?? sections.find((section) => section.kind === 'collection-grid')
+})
+const lumosCollectionSettings = computed(() => {
+  const section = lumosCollections.value
+  return section ? { ...section.settings } : {}
+})
+const lumosCollectionBannerBlock = computed(() => {
+  const section = lumosCollections.value
+  return section?.blocks?.find((block) => block.kind === 'collection-banner')
+})
+const lumosCollectionBannerSettings = computed(() => {
+  const block = lumosCollectionBannerBlock.value
+  return block ? { ...block.settings } : {}
+})
+const lumosCollectionGridBlock = computed(() => {
+  const section = lumosCollections.value
+  return section?.blocks?.find((block) => block.kind === 'category-grid')
+})
+const lumosCollectionGridSettings = computed(() => {
+  const block = lumosCollectionGridBlock.value
+  return block ? { ...block.settings } : {}
+})
+const lumosCollectionChildGridBlock = computed(() => {
+  const section = lumosCollections.value
+  return section?.blocks?.find((block) => block.kind === 'child-category-grid')
+})
+const lumosCollectionChildGridSettings = computed(() => {
+  const block = lumosCollectionChildGridBlock.value
+  return block ? { ...block.settings } : {}
+})
+/** Bumps when collection canvas inputs change so Lumos collection preview stays in sync. */
+const lumosCollectionPreviewKey = computed(() => {
+  const section = lumosCollections.value
+  if (!section) return 'none'
+  const s = section.settings
+  const blockKinds = (section.blocks ?? []).map((block) => block.kind).join(',')
+  return [
+    section.id,
+    s.showCollectionBanner,
+    s.showChildEntities,
+    s.paddingVertical,
+    s.paddingHorizontal,
+    s.alignHorizontal,
+    s.alignVertical,
+    s.colorSchema,
+    s.textSchema,
+    s.productCardSchema,
+    blockKinds,
+    JSON.stringify(lumosCollectionBannerSettings.value),
+    JSON.stringify(lumosCollectionChildGridSettings.value),
+    JSON.stringify(lumosCollectionGridSettings.value),
+    JSON.stringify(lumosAnnouncementSettings.value),
+    JSON.stringify(lumosHeaderSettings.value),
+    JSON.stringify(lumosFooterSettings.value),
+  ].join('|')
+})
+const lumosFooter = computed(() => props.sections?.find((section) => section.kind === 'footer'))
+const lumosFooterSettings = computed(() => ({ ...(lumosFooter.value?.settings ?? {}) }))
+const lumosSearchResults = computed(() => visibleSections.value.find((section) => section.kind === 'search-results'))
+const lumosSearchSettings = computed(() => {
+  const section = lumosSearchResults.value
+  return section ? { ...section.settings } : {}
+})
+const lumosSearchProductGridBlock = computed(() => {
+  const section = lumosSearchResults.value
+  return section?.blocks?.find((block) => block.kind === 'product-grid')
+})
+const lumosSearchGridSettings = computed(() => {
+  const block = lumosSearchProductGridBlock.value
+  return block ? { ...block.settings } : {}
+})
+const lumosSearchPreviewKey = computed(() => {
+  const section = lumosSearchResults.value
+  if (!section) return 'none'
+  const blockKinds = (section.blocks ?? []).map((block) => block.kind).join(',')
+  return [
+    section.id,
+    blockKinds,
+    JSON.stringify(section.settings),
+    JSON.stringify(lumosSearchGridSettings.value),
+    JSON.stringify(lumosAnnouncementSettings.value),
+    JSON.stringify(lumosHeaderSettings.value),
+    JSON.stringify(lumosFooterSettings.value),
+  ].join('|')
+})
+const lumosProductDetail = computed(() => visibleSections.value.find((section) => section.kind === 'product-detail'))
+const lumosProductDetailBlock = computed(() => {
+  const section = lumosProductDetail.value
+  return section?.blocks?.find((block) => block.kind === 'pdp-detail')
+})
+const lumosProductSettings = computed(() => {
+  const section = lumosProductDetail.value
+  const block = lumosProductDetailBlock.value
+  return {
+    ...(section ? { ...section.settings } : {}),
+    ...(block ? { ...block.settings } : {}),
+  }
+})
+const lumosProductPreviewKey = computed(() => {
+  const section = lumosProductDetail.value
+  if (!section) return 'none'
+  return [
+    section.id,
+    JSON.stringify(section.settings),
+    JSON.stringify(lumosProductDetailBlock.value?.settings ?? {}),
+    JSON.stringify(lumosAnnouncementSettings.value),
+    JSON.stringify(lumosHeaderSettings.value),
+    JSON.stringify(lumosFooterSettings.value),
+  ].join('|')
+})
+const lumosBlogList = computed(() => visibleSections.value.find((section) => section.kind === 'blog-list'))
+const lumosBlogSettings = computed(() => {
+  const section = lumosBlogList.value
+  return section ? { ...section.settings } : {}
+})
+const lumosBlogImageBannerBlock = computed(() =>
+  lumosBlogList.value?.blocks?.find((block) => block.kind === 'blog-image-banner'),
+)
+const lumosBlogPostsBlock = computed(() =>
+  lumosBlogList.value?.blocks?.find((block) => block.kind === 'blog-posts'),
+)
+const lumosBlogBannerSettings = computed(() => ({ ...(lumosBlogImageBannerBlock.value?.settings ?? {}) }))
+const lumosBlogPostsSettings = computed(() => ({ ...(lumosBlogPostsBlock.value?.settings ?? {}) }))
+const lumosBlogsPreviewKey = computed(() => {
+  const section = lumosBlogList.value
+  if (!section) return 'none'
+  const blockKinds = (section.blocks ?? []).map((block) => block.kind).join(',')
+  return [
+    section.id,
+    blockKinds,
+    JSON.stringify(section.settings),
+    JSON.stringify(lumosBlogBannerSettings.value),
+    JSON.stringify(lumosBlogPostsSettings.value),
+    JSON.stringify(lumosAnnouncementSettings.value),
+    JSON.stringify(lumosHeaderSettings.value),
+    JSON.stringify(lumosFooterSettings.value),
+  ].join('|')
+})
+
 const rootClasses = computed(() => [
   `sf-preview--${props.device}`,
   `sf-preview--btn-${props.styles?.buttonStyle ?? 'solid'}`,
-  { 'sf-preview--interactive': props.interactive },
+  { 'sf-preview--interactive': props.interactive, 'sf-preview--lumos': showLumos.value },
 ])
 
 function text(section: ThemeSection, key: string, fallback = ''): string {
@@ -105,16 +295,138 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
 <template>
   <div class="sf-preview" :class="rootClasses" :style="styleVars" aria-label="Storefront preview">
-    <div class="sf-preview__bar">
-      <span />
-      <span />
-      <span />
-      <strong>Storefront</strong>
-    </div>
+    <div class="sf-preview__viewport" :class="{ 'sf-preview__viewport--page': sections, 'sf-preview__viewport--lumos': showLumos }">
+      <div v-if="homepage === 'lumos-blogs'" :key="lumosBlogsPreviewKey" class="sf-lumos-page">
+        <LumosBlogsPage
+          :settings="lumosBlogSettings"
+          :banner-settings="lumosBlogBannerSettings"
+          :posts-settings="lumosBlogPostsSettings"
+          :header-id="lumosHeader?.id"
+          :blog-list-id="lumosBlogList?.id"
+          :blog-image-banner-block-id="lumosBlogImageBannerBlock?.id"
+          :blog-posts-block-id="lumosBlogPostsBlock?.id"
+          :footer-id="lumosFooter?.id"
+          :footer-settings="lumosFooterSettings"
+          :selected-id="selectedId"
+          :selected-block-id="selectedBlockId"
+          :interactive="interactive"
+          :header-edit-active="headerEditActive"
+          :footer-edit-active="footerEditActive"
+          :announcement-settings="lumosAnnouncementSettings"
+          :header-settings="lumosHeaderSettings"
+          :show-announcement="showLumosAnnouncement"
+          :selected-header-layer="selectedHeaderLayer"
+          :selected-footer-layer="selectedFooterLayer"
+          @select="emit('select', $event)"
+          @select-block="(blockId) => { if (lumosBlogList?.id) emit('selectBlock', lumosBlogList.id, blockId) }"
+          @hover="onHover"
+          @edit-header="emit('edit-header')"
+          @select-header-layer="emit('select-header-layer', $event)"
+          @edit-footer="emit('edit-footer')"
+          @select-footer-layer="emit('select-footer-layer', $event)"
+        />
+      </div>
+      <div v-else-if="homepage === 'lumos-product'" :key="lumosProductPreviewKey" class="sf-lumos-page">
+        <LumosProductPage
+          :settings="lumosProductSettings"
+          :header-id="lumosHeader?.id"
+          :product-detail-id="lumosProductDetail?.id"
+          :product-detail-block-id="lumosProductDetailBlock?.id"
+          :footer-id="lumosFooter?.id"
+          :footer-settings="lumosFooterSettings"
+          :selected-id="selectedId"
+          :selected-block-id="selectedBlockId"
+          :interactive="interactive"
+          :header-edit-active="headerEditActive"
+          :footer-edit-active="footerEditActive"
+          :announcement-settings="lumosAnnouncementSettings"
+          :header-settings="lumosHeaderSettings"
+          :show-announcement="showLumosAnnouncement"
+          :selected-header-layer="selectedHeaderLayer"
+          :selected-footer-layer="selectedFooterLayer"
+          @select="emit('select', $event)"
+          @select-block="(blockId) => { if (lumosProductDetail?.id) emit('selectBlock', lumosProductDetail.id, blockId) }"
+          @hover="onHover"
+          @edit-header="emit('edit-header')"
+          @select-header-layer="emit('select-header-layer', $event)"
+          @edit-footer="emit('edit-footer')"
+          @select-footer-layer="emit('select-footer-layer', $event)"
+        />
+      </div>
+      <div v-else-if="homepage === 'lumos-search'" :key="lumosSearchPreviewKey" class="sf-lumos-page">
+        <LumosSearchResultsPage
+          :settings="lumosSearchSettings"
+          :grid-settings="lumosSearchGridSettings"
+          :header-id="lumosHeader?.id"
+          :search-results-id="lumosSearchResults?.id"
+          :product-grid-block-id="lumosSearchProductGridBlock?.id"
+          :footer-id="lumosFooter?.id"
+          :footer-settings="lumosFooterSettings"
+          :selected-id="selectedId"
+          :selected-block-id="selectedBlockId"
+          :interactive="interactive"
+          :header-edit-active="headerEditActive"
+          :footer-edit-active="footerEditActive"
+          :announcement-settings="lumosAnnouncementSettings"
+          :header-settings="lumosHeaderSettings"
+          :show-announcement="showLumosAnnouncement"
+          :selected-header-layer="selectedHeaderLayer"
+          :selected-footer-layer="selectedFooterLayer"
+          @select="emit('select', $event)"
+          @select-block="(blockId) => { if (lumosSearchResults?.id) emit('selectBlock', lumosSearchResults.id, blockId) }"
+          @hover="onHover"
+          @edit-header="emit('edit-header')"
+          @select-header-layer="emit('select-header-layer', $event)"
+          @edit-footer="emit('edit-footer')"
+          @select-footer-layer="emit('select-footer-layer', $event)"
+        />
+      </div>
+      <div v-else-if="homepage === 'lumos-collection'" :key="lumosCollectionPreviewKey" class="sf-lumos-page">
+        <LumosCollectionsPage
+          :settings="lumosCollectionSettings"
+          :show-collection-banner="lumosCollectionSettings.showCollectionBanner === true"
+          :show-child-entities="lumosCollectionSettings.showChildEntities === true"
+          :banner-settings="lumosCollectionBannerSettings"
+          :banner-block-id="lumosCollectionBannerBlock?.id"
+          :child-grid-settings="lumosCollectionChildGridSettings"
+          :child-grid-block-id="lumosCollectionChildGridBlock?.id"
+          :grid-settings="lumosCollectionGridSettings"
+          :grid-block-id="lumosCollectionGridBlock?.id"
+          :selected-block-id="selectedBlockId"
+          :header-id="lumosHeader?.id"
+          :collections-id="lumosCollections?.id"
+          :footer-id="lumosFooter?.id"
+          :footer-settings="lumosFooterSettings"
+          :selected-id="selectedId"
+          :interactive="interactive"
+          :header-edit-active="headerEditActive"
+          :footer-edit-active="footerEditActive"
+          :announcement-settings="lumosAnnouncementSettings"
+          :header-settings="lumosHeaderSettings"
+          :show-announcement="showLumosAnnouncement"
+          :selected-header-layer="selectedHeaderLayer"
+          :selected-footer-layer="selectedFooterLayer"
+          :collection-title="collectionTitle"
+          :linked="!interactive"
+          @select="emit('select', $event)"
+          @select-block="(blockId) => { if (lumosCollections?.id) emit('selectBlock', lumosCollections.id, blockId) }"
+          @hover="onHover"
+          @edit-header="emit('edit-header')"
+          @select-header-layer="emit('select-header-layer', $event)"
+          @edit-footer="emit('edit-footer')"
+          @select-footer-layer="emit('select-footer-layer', $event)"
+        />
+      </div>
+      <div v-else-if="lumosShot" class="sf-lumos-page">
+        <img
+          class="sf-lumos-shot"
+          :src="lumosShot.src"
+          :alt="lumosShot.alt"
+        >
+      </div>
 
-    <div class="sf-preview__viewport" :class="{ 'sf-preview__viewport--page': sections }">
       <!-- Sectioned mode: schema-driven mocks per section kind -->
-      <template v-if="sections">
+      <template v-else-if="sections">
         <div
           v-for="section in visibleSections"
           :key="section.id"
@@ -135,15 +447,32 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <em v-if="text(section, 'link')">{{ text(section, 'link') }}</em>
           </div>
 
-          <div v-else-if="section.kind === 'header'" class="sf-header" :class="`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`">
-            <strong>ATLAS</strong>
-            <nav class="sf-header__menu">
-              <span>New</span>
-              <span>Women</span>
-              <span>Men</span>
-              <span>Sale</span>
-            </nav>
-            <span class="sf-header__cart" />
+          <div
+            v-else-if="section.kind === 'header'"
+            class="sf-header-wrap"
+            :class="{ 'sf-header-wrap--selected': interactive && section.id === selectedId }"
+          >
+            <div class="sf-header" :class="`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`">
+              <strong>ATLAS</strong>
+              <nav class="sf-header__menu">
+                <span>New</span>
+                <span>Women</span>
+                <span>Men</span>
+                <span>Sale</span>
+              </nav>
+              <span class="sf-header__cart" />
+            </div>
+            <div v-if="interactive && section.id === selectedId && !headerEditActive" class="sf-header-chrome">
+              <v-btn
+                size="small"
+                color="primary"
+                variant="flat"
+                class="text-none"
+                @click.stop="emit('edit-header')"
+              >
+                Edit Header
+              </v-btn>
+            </div>
           </div>
 
           <div
@@ -221,6 +550,25 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             </div>
           </div>
 
+          <div v-else-if="section.kind === 'blog-list'" class="sf-blogs" :class="{ 'sf-blogs--list': section.settings.layout === 'List' }">
+            <strong class="sf-heading">Blog</strong>
+            <div class="sf-blogs__grid">
+              <article
+                v-for="n in Math.min(num(section, 'postsPerPage', 12), 6)"
+                :key="n"
+                class="sf-blogs__card"
+              >
+                <span class="sf-blogs__thumb" />
+                <span class="sf-line sf-line--full" />
+                <span v-if="flag(section, 'showExcerpt')" class="sf-line sf-line--mid" />
+                <span v-if="flag(section, 'showDate') || flag(section, 'showAuthor')" class="sf-blogs__meta">
+                  <em v-if="flag(section, 'showDate')">May 12, 2026</em>
+                  <em v-if="flag(section, 'showAuthor')">Atlas editorial</em>
+                </span>
+              </article>
+            </div>
+          </div>
+
           <div v-else-if="section.kind === 'cart-summary'" class="sf-cart">
             <strong class="sf-heading">Your cart</strong>
             <div v-for="n in 2" :key="n" class="sf-cart__row">
@@ -240,23 +588,65 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
             <span class="sf-btn">Checkout</span>
           </div>
 
-          <div v-else-if="section.kind === 'footer'" class="sf-footer">
-            <div class="sf-footer__cols" :style="{ '--sf-cols': num(section, 'columns', 3) }">
-              <div v-for="n in num(section, 'columns', 3)" :key="n" class="sf-footer__col">
-                <span class="sf-line sf-line--name" />
-                <span class="sf-line sf-line--mid" />
-                <span class="sf-line sf-line--mid" />
+          <div
+            v-else-if="section.kind === 'footer'"
+            class="sf-footer-wrap"
+            :class="{ 'sf-footer-wrap--selected': interactive && section.id === selectedId }"
+          >
+            <div class="sf-footer">
+              <div class="sf-footer__cols" :style="{ '--sf-cols': num(section, 'columns', 3) }">
+                <div v-for="n in num(section, 'columns', 3)" :key="n" class="sf-footer__col">
+                  <span class="sf-line sf-line--name" />
+                  <span class="sf-line sf-line--mid" />
+                  <span class="sf-line sf-line--mid" />
+                </div>
+              </div>
+              <div v-if="flag(section, 'showSocial')" class="sf-footer__social">
+                <span v-for="n in 4" :key="n" />
               </div>
             </div>
-            <div v-if="flag(section, 'showSocial')" class="sf-footer__social">
-              <span v-for="n in 4" :key="n" />
+            <div v-if="interactive && section.id === selectedId && !footerEditActive" class="sf-header-chrome">
+              <v-btn
+                size="small"
+                color="primary"
+                variant="flat"
+                class="text-none"
+                @click.stop="emit('edit-footer')"
+              >
+                Edit Footer
+              </v-btn>
             </div>
+          </div>
+
+          <div v-else-if="section.kind === 'categories'" class="sf-child-collections">
+            <template v-for="block in section.blocks ?? []" :key="block.id">
+              <div
+                v-if="block.kind === 'category-grid'"
+                class="sf-block"
+                :class="{
+                  'sf-block--selected': block.id === selectedBlockId,
+                  'sf-block--new': pendingBlockSet.has(block.id),
+                }"
+                @click.stop="onSelectBlock(section.id, block.id)"
+              >
+                <div class="sf-collection-grid-mock" :style="{ '--sf-cols': blockNum(block, 'itemsPerRow', 3) }">
+                  <strong>{{ blockText(block, 'label', 'Collection Grid') }}</strong>
+                  <span class="text-caption text-medium-emphasis">
+                    {{ blockNum(block, 'totalItems', 25) }} items · {{ blockText(block, 'layout', 'Grid') }} ·
+                    {{ blockText(block, 'paginationStyle', 'Combined (Load more)') }}
+                  </span>
+                  <div class="sf-collection-grid-mock__tiles">
+                    <span v-for="n in blockNum(block, 'itemsPerRow', 3)" :key="n"></span>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
 
           <div v-else class="sf-unknown">{{ section.label }}</div>
 
           <!-- Blocks region: additive, only when the section has blocks -->
-          <div v-if="section.blocks?.length" class="sf-blocks">
+          <div v-if="section.blocks?.length && section.kind !== 'categories'" class="sf-blocks">
             <component
               :is="interactive ? 'button' : 'div'"
               v-for="block in section.blocks"
@@ -299,24 +689,6 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 
         <div v-if="!visibleSections.length" class="sf-empty">No sections yet — add sections to build this template.</div>
       </template>
-
-      <!-- Default static mock (extracted 1:1 from SalesChannelDetail) -->
-      <template v-else>
-        <div class="sf-preview__nav">
-          <strong>ATLAS</strong>
-          <span>New</span>
-          <span>Women</span>
-          <span>Men</span>
-          <span>Sale</span>
-        </div>
-        <div class="sf-preview__body">
-          <div class="sf-preview__hero">
-            <strong>Fall 26<br>Drop 02</strong>
-            <span>Shop now</span>
-          </div>
-          <div v-for="n in 5" :key="n" class="sf-preview__tile" :class="`sf-preview__tile--${n}`" />
-        </div>
-      </template>
     </div>
   </div>
 </template>
@@ -353,35 +725,6 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   background: var(--surface-primary);
-}
-
-/* ── Browser chrome ─────────────────────────────────────────────── */
-.sf-preview__bar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--surface-secondary);
-}
-
-.sf-preview__bar span {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--r-pill);
-  background: color-mix(in oklch, var(--text-primary) 16%, transparent);
-}
-
-.sf-preview__bar strong {
-  overflow: hidden;
-  margin-left: 8px;
-  color: var(--muted);
-  font-family: var(--mp-fontFamily-mono, monospace);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ── Device frames ──────────────────────────────────────────────── */
@@ -517,6 +860,53 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   color: var(--sf-text);
   font-family: var(--sf-body-font);
   font-size: 12px;
+}
+
+.sf-preview__viewport--lumos {
+  overflow: auto;
+}
+
+.sf-lumos-page {
+  position: relative;
+}
+
+.sf-lumos-page--interactive .sf-lumos-shot {
+  pointer-events: none;
+}
+
+.sf-lumos-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sf-lumos-layers {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.sf-lumos-layer--header {
+  flex: 5.5 0 0;
+}
+
+.sf-lumos-layer--collections {
+  flex: 78.5 0 0;
+}
+
+.sf-lumos-layer--footer {
+  flex: 16 0 0;
+}
+
+.sf-preview--interactive .sf-lumos-layer:hover {
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+
+.sf-lumos-layer.sf-section--selected,
+.sf-preview--interactive .sf-lumos-layer.sf-section--selected:hover {
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
 }
 
 .sf-heading {
@@ -727,6 +1117,36 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-announcement em {
   font-style: normal;
   text-decoration: underline;
+}
+
+.sf-header-wrap,
+.sf-footer-wrap {
+  position: relative;
+}
+
+.sf-footer-wrap--selected .sf-footer {
+  background: color-mix(in srgb, var(--sf-brand) 8%, var(--sf-bg));
+}
+
+.sf-header-wrap--selected .sf-header {
+  background: color-mix(in srgb, var(--sf-brand) 8%, var(--sf-bg));
+}
+
+.sf-header-chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: var(--mp-space-8);
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px var(--sf-brand);
+  background: color-mix(in srgb, var(--sf-brand) 10%, transparent);
+}
+
+.sf-header-chrome .v-btn {
+  pointer-events: auto;
 }
 
 .sf-header {
@@ -1006,6 +1426,44 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-pdp__reviews {
   color: color-mix(in oklch, var(--sf-text) 65%, transparent);
   font-size: 10.5px;
+}
+
+.sf-blogs__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sf-blogs--list .sf-blogs__grid {
+  grid-template-columns: 1fr;
+}
+
+.sf-blogs__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--sf-line, rgba(0, 0, 0, 0.08));
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill, rgba(0, 0, 0, 0.03));
+}
+
+.sf-blogs__thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: calc(var(--sf-radius) - 2px);
+  background: color-mix(in oklch, var(--sf-text) 8%, transparent);
+}
+
+.sf-blogs__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: color-mix(in oklch, var(--sf-text) 55%, transparent);
+  font-size: 10.5px;
+  font-style: normal;
 }
 
 .sf-cart {

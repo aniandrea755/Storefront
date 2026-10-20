@@ -2,6 +2,9 @@
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
+import DashboardSectionTabNav, {
+  type DashboardSectionTabValue,
+} from '@/components/dashboards/DashboardSectionTabNav.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
@@ -20,6 +23,7 @@ import type {
   DashboardWidgetDraft,
 } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
+import { defaultDashboardRoute } from '@/stores/dashboards/dashboardNav'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useToast } from '@/composables/useToast'
@@ -121,6 +125,20 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [route.name, dashboardIdParam.value, accountId.value] as const,
+  ([routeName, dashboardId, accId]) => {
+    if (routeName !== 'Dashboard' || dashboardId) return
+    const account = accountsStore.accounts.find((entry) => entry.id === accId)
+    const subscriptions = account?.subscriptions ?? ['marketing']
+    const target = defaultDashboardRoute(accId, subscriptions)
+    if (target !== `/accounts/${accId}/dashboard`) {
+      router.replace(target)
+    }
+  },
+  { immediate: true },
+)
+
 const dashboards = computed(() => dashboardsStore.getDashboardsForAccount(accountId.value))
 const activeDashboard = computed(() => dashboardsStore.getDashboardById(accountId.value, dashboardIdParam.value))
 const activeDashboardId = computed(() => activeDashboard.value?.id)
@@ -201,6 +219,48 @@ const setupProgress = computed(() =>
 )
 
 const pageTitle = computed(() => activeDashboard.value?.name ?? 'Dashboard')
+
+const isCommerceOverviewPage = computed(
+  () => activeDashboardId.value === `${accountId.value}-commerce-overview`,
+)
+
+const commerceSectionTab = ref<DashboardSectionTabValue>('overview')
+
+watch(
+  () => route.query.section,
+  (section) => {
+    if (!isCommerceOverviewPage.value) return
+    commerceSectionTab.value = section === 'campaigns' ? 'campaigns' : 'overview'
+  },
+  { immediate: true },
+)
+
+watch(isCommerceOverviewPage, (onCommerce) => {
+  if (!onCommerce) commerceSectionTab.value = 'overview'
+})
+
+watch(commerceSectionTab, (tab) => {
+  if (!isCommerceOverviewPage.value) return
+  const wantsCampaigns = tab === 'campaigns'
+  const hasCampaignsQuery = route.query.section === 'campaigns'
+  if (wantsCampaigns === hasCampaignsQuery) return
+  const nextQuery = { ...route.query }
+  if (wantsCampaigns) nextQuery.section = 'campaigns'
+  else delete nextQuery.section
+  router.replace({ query: nextQuery })
+})
+
+const commerceGridWidgets = computed(() => {
+  if (!activeDashboard.value) return []
+  if (!isCommerceOverviewPage.value || commerceSectionTab.value === 'overview') {
+    return activeDashboard.value.widgets
+  }
+  const marketing = dashboardsStore.getDashboardById(
+    accountId.value,
+    `${accountId.value}-marketing-performance`,
+  )
+  return marketing?.widgets ?? activeDashboard.value.widgets
+})
 
 const filteredDashboards = computed(() => {
   const query = switcherSearch.value.trim().toLowerCase()
@@ -619,6 +679,11 @@ function toggleFavoriteActive() {
         </div>
       </div>
 
+      <DashboardSectionTabNav
+        v-if="isCommerceOverviewPage"
+        v-model="commerceSectionTab"
+      />
+
       <!-- Row 2: Filter strip -->
       <div class="dashboard-page-header__filters">
         <div class="dashboard-page-header__filters-left">
@@ -695,7 +760,7 @@ function toggleFavoriteActive() {
       v-if="activeDashboard"
       :account-id="accountId"
       :dashboard-id="activeDashboard.id"
-      :widgets="activeDashboard.widgets"
+      :widgets="commerceGridWidgets"
       :filters="activeDashboard.filters"
       :setup-tasks="setupTasks"
       :setup-completed="completedSetupTasks"

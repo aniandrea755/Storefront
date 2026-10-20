@@ -14,10 +14,16 @@ import {
 export interface ThemeSectionField {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider'
+  type: 'text' | 'textarea' | 'select' | 'color' | 'toggle' | 'slider' | 'number' | 'segmented'
   options?: string[]
+  /** Lucide icon per option, used by `segmented` fields. */
+  icons?: string[]
   min?: number
   max?: number
+  /** Heading shown once, above the first field that carries this group. */
+  group?: string
+  /** Hide the field unless these settings match. One rule, or all of them. */
+  visibleWhen?: { key: string; equals: string | number | boolean } | Array<{ key: string; equals: string | number | boolean }>
 }
 
 export interface ThemeSectionVariant {
@@ -37,6 +43,10 @@ export interface ThemeSectionDef {
   variants?: ThemeSectionVariant[]
   acceptsBlocks?: boolean
   unique?: boolean
+  /** Required sections cannot be added twice, deleted, reordered, or hidden. */
+  required?: boolean
+  /** Omit from template section layer lists — edited in the Header builder surface. */
+  hideFromLayerList?: boolean
 }
 
 /** A block nested inside a block-accepting section. */
@@ -51,6 +61,10 @@ export interface ThemeBlockDef {
   title: string
   icon: string
   fields: ThemeSectionField[]
+  /** When set, the block can only be added to these section kinds. */
+  sectionKinds?: string[]
+  /** Locked blocks cannot be added, deleted, or reordered. */
+  locked?: boolean
 }
 
 export interface ThemeSection {
@@ -65,7 +79,7 @@ export interface ThemeSection {
 /** Display/group order for the categorized Add Section picker. */
 export const sectionCategories: string[] = ['Layout', 'Media', 'Featured', 'Content', 'Commerce']
 
-export type TemplateType = 'home' | 'product' | 'collection' | 'cart'
+export type TemplateType = 'home' | 'product' | 'collection' | 'search' | 'cart' | 'blogs'
 
 export interface ThemeStyles {
   brandColor: string
@@ -89,13 +103,15 @@ export interface StoreTheme {
   templates: Record<TemplateType, ThemeSection[]>
 }
 
-export const TEMPLATE_TYPES: TemplateType[] = ['home', 'product', 'collection', 'cart']
+export const TEMPLATE_TYPES: TemplateType[] = ['home', 'product', 'collection', 'search', 'cart', 'blogs']
 
 export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
   home: 'Home',
   product: 'Product',
   collection: 'Collection',
+  search: 'Search Results',
   cart: 'Cart',
+  blogs: 'Blogs',
 }
 
 /** Fonts offered by the theme styles panel. */
@@ -120,10 +136,11 @@ export function defaultThemeStyles(): ThemeStyles {
 export const sectionCatalog: ThemeSectionDef[] = [
   {
     kind: 'announcement-bar',
-    title: 'Announcement bar',
+    title: 'Announcement banner',
     icon: 'megaphone',
     description: 'Slim strip above the header for promos and shipping notices.',
     category: 'Layout',
+    hideFromLayerList: true,
     fields: [
       { key: 'text', label: 'Text', type: 'text' },
       { key: 'link', label: 'Link label', type: 'text' },
@@ -136,8 +153,16 @@ export const sectionCatalog: ThemeSectionDef[] = [
     description: 'Store logo, navigation menu, and cart.',
     category: 'Layout',
     unique: true,
+    hideFromLayerList: true,
     fields: [
+      { key: 'menuSelect', label: 'Select Menu', type: 'select', options: ['Main Menu', 'Secondary Menu', 'Mobile Menu'] },
+      { key: 'menuLayoutType', label: 'Menu Layout', type: 'select', options: ['Horizontal Menu', 'Drawer'] },
+      { key: 'menuDesign', label: 'Menu Design', type: 'select', options: ['Dropdown', 'Inline', 'Megamenu'] },
       { key: 'menuStyle', label: 'Menu style', type: 'select', options: ['Inline', 'Centered', 'Minimal'] },
+      { key: 'menuLayout', label: 'Menu layout', type: 'select', options: ['Horizontal', 'Dropdown'] },
+      { key: 'logoSelect', label: 'Select Logo', type: 'select', options: ['Main logo', 'Secondary logo', 'Icon mark'] },
+      { key: 'logoPosition', label: 'Logo Position', type: 'select', options: ['Middle Center', 'Top Center', 'Middle Left', 'Top Left'] },
+      { key: 'headerScroll', label: 'Header scroll settings', type: 'select', options: ['Scroll with site', 'Sticky header'] },
       { key: 'sticky', label: 'Sticky on scroll', type: 'toggle' },
     ],
   },
@@ -252,14 +277,17 @@ export const sectionCatalog: ThemeSectionDef[] = [
   },
   {
     kind: 'product-detail',
-    title: 'Product detail',
+    title: 'PDP Information',
     icon: 'package',
-    description: 'Gallery, price, and buy box for the product template.',
+    description: 'Product gallery, pricing, and buy box for the product template.',
     category: 'Commerce',
     unique: true,
+    acceptsBlocks: true,
     fields: [
-      { key: 'galleryLayout', label: 'Gallery layout', type: 'select', options: ['Thumbnails', 'Stacked'] },
-      { key: 'showReviews', label: 'Show reviews', type: 'toggle' },
+      { key: 'showVariantSelector', label: 'Show variant selector', type: 'toggle' },
+      { key: 'colorSchema', label: 'Color schema', type: 'select', options: ['Theme default', 'Modern Look'], group: 'Style settings' },
+      { key: 'textSchema', label: 'Text schema', type: 'select', options: ['Theme default', 'Compact'], group: 'Style settings' },
+      { key: 'buttonSchema', label: 'Button schema', type: 'select', options: ['Theme default', 'Modern'], group: 'Style settings' },
     ],
   },
   {
@@ -275,15 +303,70 @@ export const sectionCatalog: ThemeSectionDef[] = [
     ],
   },
   {
+    kind: 'search-results',
+    title: 'Search Results',
+    icon: 'search',
+    description: 'Product grid shown after a storefront search.',
+    category: 'Commerce',
+    unique: true,
+    required: true,
+    acceptsBlocks: true,
+    fields: [
+      { key: 'colorSchema', label: 'Color schema', type: 'select', options: ['Theme default', 'Modern Look'], group: 'Style settings' },
+      { key: 'textSchema', label: 'Text schema', type: 'select', options: ['Theme default', 'Compact'], group: 'Style settings' },
+      { key: 'productCardSchema', label: 'Product card schema', type: 'select', options: ['Theme default', 'Modern'], group: 'Style settings' },
+    ],
+  },
+  {
+    kind: 'blog-list',
+    title: 'Blogs',
+    icon: 'rss',
+    description: 'Blog index with post cards for the blogs template.',
+    category: 'Content',
+    unique: true,
+    required: true,
+    acceptsBlocks: true,
+    fields: [
+      { key: 'postsPerPage', label: 'Posts per page', type: 'number', min: 1, max: 48 },
+      { key: 'showExcerpt', label: 'Show excerpt', type: 'toggle' },
+      { key: 'showAuthor', label: 'Show author', type: 'toggle' },
+      { key: 'showDate', label: 'Show date', type: 'toggle' },
+      { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'List'] },
+    ],
+  },
+  {
     kind: 'footer',
     title: 'Footer',
     icon: 'panel-bottom',
     description: 'Link columns, social icons, and legal.',
     category: 'Layout',
     unique: true,
+    hideFromLayerList: true,
     fields: [
       { key: 'showSocial', label: 'Show social icons', type: 'toggle' },
+      { key: 'showNewsletter', label: 'Show newsletter', type: 'toggle' },
       { key: 'columns', label: 'Link columns', type: 'slider', min: 2, max: 4 },
+    ],
+  },
+  {
+    kind: 'categories',
+    title: 'Collections',
+    icon: 'folders',
+    description: 'Child collections of the collection a shopper is viewing.',
+    category: 'Commerce',
+    acceptsBlocks: true,
+    unique: true,
+    required: true,
+    fields: [
+      { key: 'showCollectionBanner', label: 'Show collection banner', type: 'toggle' },
+      { key: 'showChildEntities', label: 'Show child entities', type: 'toggle' },
+      { key: 'colorSchema', label: 'Color schema', type: 'select', options: ['Theme default', 'Modern Look'], group: 'Style settings' },
+      { key: 'textSchema', label: 'Text schema', type: 'select', options: ['Theme default', 'Compact'], group: 'Style settings' },
+      { key: 'productCardSchema', label: 'Product card schema', type: 'select', options: ['Theme default', 'Modern'], group: 'Style settings' },
+      { key: 'paddingVertical', label: 'Vertical', type: 'number', min: 0, max: 120, group: 'Section padding' },
+      { key: 'paddingHorizontal', label: 'Horizontal', type: 'number', min: 0, max: 120, group: 'Section padding' },
+      { key: 'alignHorizontal', label: 'Horizontal', type: 'segmented', options: ['Left', 'Center', 'Right'], icons: ['align-left', 'align-center', 'align-right'], group: 'Section alignment' },
+      { key: 'alignVertical', label: 'Vertical', type: 'segmented', options: ['Top', 'Center', 'Bottom'], icons: ['align-start-vertical', 'align-center-vertical', 'align-end-vertical'], group: 'Section alignment' },
     ],
   },
 ]
@@ -291,7 +374,60 @@ export const sectionCatalog: ThemeSectionDef[] = [
 /** Default settings applied when a section of the given kind is created. */
 const sectionDefaults: Record<string, Record<string, string | number | boolean>> = {
   'announcement-bar': { text: 'Free shipping on orders over $75', link: 'Shop sale' },
-  header: { menuStyle: 'Inline', sticky: true },
+  header: {
+    label: 'Header Section',
+    colorSchema: 'Modern Look',
+    textSchema: 'Compact',
+    headerScroll: 'Scroll with site',
+    headerPaddingVertical: 24,
+    headerPaddingHorizontal: 24,
+    headerPaddingLinked: true,
+    alignHorizontal: 'Left',
+    alignVertical: 'Center',
+    showShadow: false,
+    searchPlaceholder: 'Search ...',
+    searchShowSuggestionsWhenTyping: true,
+    searchShowTrendingBeforeStart: false,
+    searchUseLinkForHidden: false,
+    searchSuggestionsLimit: 5,
+    searchProductMatchesLimit: 5,
+    searchSuggestionsLayout: 'Vertical',
+    searchStyle: 'Search icon & input',
+    searchPosition: 'Top left',
+    searchBorderWidth: 1,
+    searchCornerRadius: 4,
+    menuSelect: 'Main Menu',
+    menuUseLinkForHidden: false,
+    menuLayoutType: 'Horizontal Menu',
+    menuDesign: 'Dropdown',
+    menuPaddingVertical: 24,
+    menuPaddingHorizontal: 24,
+    menuPaddingLinked: true,
+    menuAlignHorizontal: 'Center',
+    menuAlignVertical: 'Center',
+    menuHighlightSelected: false,
+    menuAddDivider: false,
+    menuAddBackground: false,
+    dropdownPaddingVertical: 24,
+    dropdownPaddingHorizontal: 24,
+    dropdownPaddingLinked: true,
+    dropdownAlignHorizontal: 'Center',
+    dropdownAlignVertical: 'Center',
+    dropdownShowSubcategoryImages: true,
+    dropdownCtaLabel: 'SEE MORE',
+    dropdownCtaLink: 'https://demo.maropost.com',
+    dropdownShowShadow: true,
+    dropdownShadowPreset: 'Primary shadow',
+    menuStyle: 'Inline',
+    menuLayout: 'Horizontal',
+    logoSelect: 'Main logo',
+    logoPosition: 'Top Center',
+    showLanguageSelector: true,
+    showWishlist: true,
+    showSignIn: true,
+    showCart: true,
+    sticky: false,
+  },
   hero: {
     headline: 'Fall 26 Drop 02',
     subheadline: 'Limited-run outerwear and trail-ready layers.',
@@ -309,9 +445,51 @@ const sectionDefaults: Record<string, Record<string, string | number | boolean>>
   },
   testimonials: { title: 'What customers say', count: 3 },
   newsletter: { headline: 'Join the list', buttonLabel: 'Subscribe' },
-  'product-detail': { galleryLayout: 'Thumbnails', showReviews: true },
+  'product-detail': {
+    showVariantSelector: true,
+    colorSchema: 'Modern Look',
+    textSchema: 'Compact',
+    buttonSchema: 'Modern',
+  },
   'cart-summary': { showNotes: false, upsells: true },
-  footer: { showSocial: true, columns: 3 },
+  'search-results': {
+    sampleQuery: 'modern furniture',
+    colorSchema: 'Modern Look',
+    textSchema: 'Compact',
+    productCardSchema: 'Modern',
+  },
+  'blog-list': {
+    heroEyebrow: 'Our Blog',
+    heroTitle: 'Stories & Inspiration',
+    heroDescription:
+      'Explore the latest trends, inspiring design ideas, and expert advice to create your perfect living space. From choosing the right colors and furniture to adding thoughtful finishing touches, discover practical tips and fresh inspiration to make every room feel stylish, comfortable, and uniquely yours.',
+    postsPerPage: 12,
+    showExcerpt: true,
+    showAuthor: true,
+    showDate: true,
+    layout: 'Grid',
+  },
+  footer: {
+    label: 'Footer Section',
+    colorSchema: 'Modern Look',
+    textSchema: 'Compact',
+    showSocial: true,
+    showNewsletter: true,
+    columns: 3,
+  },
+  categories: {
+    title: 'Shop by category',
+    showCollectionBanner: false,
+    showChildEntities: false,
+    colorSchema: 'Theme default',
+    textSchema: 'Theme default',
+    productCardSchema: 'Theme default',
+    paddingVertical: 24,
+    paddingHorizontal: 56,
+    paddingLinked: false,
+    alignHorizontal: 'Center',
+    alignVertical: 'Center',
+  },
 }
 
 export function getSectionDef(kind: string): ThemeSectionDef | undefined {
@@ -389,6 +567,111 @@ export const blockCatalog: ThemeBlockDef[] = [
     icon: 'move-vertical',
     fields: [{ key: 'size', label: 'Size', type: 'slider', min: 8, max: 80 }],
   },
+  {
+    kind: 'child-category-grid',
+    title: 'Child Category Grid',
+    icon: 'scan',
+    locked: true,
+    sectionKinds: ['categories'],
+    fields: [],
+  },
+  {
+    kind: 'collection-banner',
+    title: 'Collection Banner',
+    icon: 'image',
+    locked: true,
+    sectionKinds: ['categories'],
+    fields: [
+      { key: 'showCollectionDescription', label: 'Show collection description', type: 'toggle', group: 'Content settings' },
+      { key: 'showCollectionImage', label: 'Show collection image', type: 'toggle', group: 'Content settings' },
+      { key: 'imageOpacity', label: 'Image opacity', type: 'slider', min: 0, max: 100, group: 'Content settings' },
+      { key: 'colorSchema', label: 'Color schema', type: 'select', options: ['Theme default', 'Modern Look'], group: 'Style settings' },
+      { key: 'textSchema', label: 'Text schema', type: 'select', options: ['Theme default', 'Compact'], group: 'Style settings' },
+      { key: 'paddingVertical', label: 'Vertical', type: 'number', min: 0, max: 120, group: 'Section padding' },
+      { key: 'paddingHorizontal', label: 'Horizontal', type: 'number', min: 0, max: 120, group: 'Section padding' },
+      { key: 'alignHorizontal', label: 'Horizontal', type: 'segmented', options: ['Left', 'Center', 'Right'], icons: ['align-left', 'align-center', 'align-right'], group: 'Section alignment' },
+      { key: 'alignVertical', label: 'Vertical', type: 'segmented', options: ['Top', 'Center', 'Bottom'], icons: ['align-start-vertical', 'align-center-vertical', 'align-end-vertical'], group: 'Section alignment' },
+    ],
+  },
+  {
+    kind: 'pdp-detail',
+    title: 'Product Detail',
+    icon: 'package',
+    locked: true,
+    sectionKinds: ['product-detail'],
+    fields: [
+      { key: 'imageZoom', label: 'Image zoom', type: 'select', options: ['No zoom', 'Zoom on hover', 'Lightbox'] },
+      { key: 'sliderLayout', label: 'Slider layout', type: 'select', options: ['Left', 'Right', 'Bottom'], group: 'Style settings' },
+      {
+        key: 'desktopMediaPosition',
+        label: 'Desktop Media Position',
+        type: 'select',
+        options: ['Left', 'Right'],
+        group: 'Style settings',
+      },
+      { key: 'showReviews', label: 'Show reviews', type: 'toggle' },
+    ],
+  },
+  {
+    kind: 'product-grid',
+    title: 'Product Grid',
+    icon: 'layout-grid',
+    locked: true,
+    sectionKinds: ['search-results'],
+    fields: [
+      { key: 'itemsPerRow', label: 'Item per row', type: 'number', min: 1, max: 6 },
+      { key: 'totalItems', label: 'Total items', type: 'number', min: 1, max: 999 },
+    ],
+  },
+  {
+    kind: 'blog-image-banner',
+    title: 'Image Banner',
+    icon: 'image',
+    locked: true,
+    sectionKinds: ['blog-list'],
+    fields: [
+      { key: 'heroEyebrow', label: 'Eyebrow', type: 'text' },
+      { key: 'heroTitle', label: 'Title', type: 'text' },
+      { key: 'heroDescription', label: 'Description', type: 'textarea' },
+    ],
+  },
+  {
+    kind: 'blog-posts',
+    title: 'Blog Posts',
+    icon: 'layout-grid',
+    locked: true,
+    sectionKinds: ['blog-list'],
+    fields: [],
+  },
+  {
+    kind: 'category-grid',
+    title: 'Collection Grid',
+    icon: 'layout-grid',
+    locked: true,
+    sectionKinds: ['categories'],
+    fields: [
+      { key: 'itemsPerRow', label: 'Item per row', type: 'number', min: 1, max: 6 },
+      { key: 'totalItems', label: 'Total items', type: 'number', min: 1, max: 999 },
+      { key: 'layout', label: 'Layout', type: 'select', options: ['Grid', 'Carousel'], group: 'Layout' },
+      { key: 'sliderStyle', label: 'Slider style', type: 'select', options: ['Arrows', 'Dots', 'Numbers'], group: 'Style settings' },
+      { key: 'autoRotateSlide', label: 'Auto rotate slide', type: 'toggle', group: 'Style settings' },
+      {
+        key: 'slideChangingTime',
+        label: 'Slide changing time',
+        type: 'select',
+        options: ['3 sec', '5 sec', '10 sec'],
+        group: 'Style settings',
+      },
+      {
+        key: 'paginationStyle',
+        label: 'Pagination style',
+        type: 'select',
+        options: ['Combined (Load more)', 'Pages', 'Infinite scroll'],
+        group: 'Pagination',
+      },
+      { key: 'autoLoadTimes', label: 'Auto load times', type: 'number', min: 1, max: 10, group: 'Pagination' },
+    ],
+  },
 ]
 
 /** Default settings applied when a block of the given kind is created. */
@@ -399,6 +682,89 @@ const blockDefaults: Record<string, Record<string, string | number | boolean>> =
   image: { alt: '', ratio: '4:3' },
   divider: {},
   spacer: { size: 32 },
+  'child-category-grid': {
+    label: 'Category Grid',
+    layout: 'Grid',
+    cardStyle: 'Only Text',
+    cardPaddingVertical: 12,
+    cardPaddingHorizontal: 32,
+    cardPaddingLinked: false,
+    borderWidth: 1,
+    cornerRadius: 24,
+    cardAlignHorizontal: 'Center',
+    cardAlignVertical: 'Center',
+    cardShadow: false,
+  },
+  'collection-banner': {
+    label: 'Collection Banner',
+    showCollectionDescription: false,
+    showCollectionImage: true,
+    imageOpacity: 100,
+    colorSchema: 'Modern Look',
+    textSchema: 'Compact',
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+    paddingLinked: true,
+    alignHorizontal: 'Center',
+    alignVertical: 'Center',
+  },
+  'pdp-detail': {
+    label: 'Product Detail',
+    imageZoom: 'No zoom',
+    sliderLayout: 'Left',
+    desktopMediaPosition: 'Left',
+    showReviews: true,
+  },
+  'blog-image-banner': {
+    label: 'Image Banner',
+    heroEyebrow: 'Our Blog',
+    heroTitle: 'Stories & Inspiration',
+    heroDescription:
+      'Explore the latest trends, inspiring design ideas, and expert advice to create your perfect living space. From choosing the right colors and furniture to adding thoughtful finishing touches, discover practical tips and fresh inspiration to make every room feel stylish, comfortable, and uniquely yours.',
+  },
+  'blog-posts': {
+    itemsPerRow: 3,
+    totalItems: 25,
+    showFeaturedImage: true,
+    featuredImageHeight: 'Medium',
+    layout: 'Grid',
+    sliderStyle: 'Arrows',
+    autoRotateSlide: false,
+    slideChangingTime: '5 sec',
+    paginationStyle: 'Combined (Load more)',
+    autoLoadTimes: 2,
+    showExcerpt: true,
+    showAuthor: true,
+    showDate: true,
+  },
+  'product-grid': {
+    label: 'Product Grid',
+    itemsPerRow: 3,
+    totalItems: 20,
+    showPageTitle: true,
+    showSortingOptions: true,
+    showFilters: true,
+    paginationStyle: 'Pages',
+    autoLoadTimes: 2,
+    filterPosition: 'Left',
+    showFilterBreadcrumbs: true,
+    onlyOneOpenFilter: false,
+    allowFilterHidden: false,
+    allFiltersCollapsed: false,
+    showSearchBarAbove: false,
+    stickyFilter: true,
+  },
+  'category-grid': {
+    label: 'Collection Grid',
+    itemsPerRow: 3,
+    totalItems: 25,
+    layout: 'Grid',
+    sliderStyle: 'Arrows',
+    autoRotateSlide: true,
+    slideChangingTime: '5 sec',
+    paginationStyle: 'Combined (Load more)',
+    autoLoadTimes: 2,
+  },
 }
 
 export function getBlockDef(kind: string): ThemeBlockDef | undefined {

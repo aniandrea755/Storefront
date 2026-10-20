@@ -107,6 +107,7 @@ viewport (desktop full, tablet ~768px, mobile ~390px).
     pendingBlockIds: { control: 'object', description: '`string[]` of block ids just added, given the same transient New cue at block level.' },
     sections: { control: false, description: 'Ordered ThemeSection[] for the active template; omit for the static default mock.' },
     styles: { control: 'object', description: 'Partial ThemeStyles applied as CSS vars on the preview root.' },
+    homepage: { control: 'select', options: ['default', 'lumos', 'lumos-collection'], description: 'Use a Lumos Figma frame in the preview.' },
     device: { control: 'select', options: ['desktop', 'tablet', 'mobile'], description: 'Inner viewport frame width.' },
     interactive: { control: 'boolean', description: 'Hover outline + click/keyboard selection on sections.' },
     selectedId: { control: 'text', description: 'Section id highlighted with a labeled selection ring.' },
@@ -117,6 +118,32 @@ viewport (desktop full, tablet ~768px, mobile ~390px).
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const CollectionCategoryGrid: Story = {
+  args: { homepage: 'lumos-collection' },
+  render: (args) => ({
+    components: { StorefrontPreview },
+    setup: () => ({ args }),
+    template: `
+      <div style="max-width:960px;">
+        <StorefrontPreview v-bind="args" />
+      </div>
+    `,
+  }),
+}
+
+export const LumosHomepage: Story = {
+  args: { homepage: 'lumos' },
+  render: (args) => ({
+    components: { StorefrontPreview },
+    setup: () => ({ args }),
+    template: `
+      <div style="max-width:720px;">
+        <StorefrontPreview v-bind="args" />
+      </div>
+    `,
+  }),
+}
 
 export const Default: Story = {
   render: (args) => ({

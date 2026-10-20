@@ -151,7 +151,6 @@ const isWebStore = computed(() => channel.value?.type === 'web_store')
 // Published theme for this channel drives the preview dialog; falls back to the
 // default static storefront mock when no theme exists.
 const channelTheme = computed(() => (channelId.value ? storeThemesStore.themeForChannel(channelId.value) : undefined))
-const previewSections = computed(() => channelTheme.value?.templates.home)
 const previewStyles = computed(() => channelTheme.value?.styles)
 
 const locations = computed(() => {
@@ -756,7 +755,7 @@ function locationRoleText(locationId: string) {
             </div>
 
             <div class="retail-widget-body">
-              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" />
+              <StorefrontPreview v-if="isWebStore" homepage="lumos" :styles="previewStyles" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -1081,7 +1080,7 @@ function locationRoleText(locationId: string) {
         </template>
 
         <div class="sc-preview-dialog__body">
-          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" />
+          <StorefrontPreview homepage="lumos" :styles="previewStyles" :device="previewDevice" />
         </div>
       </MpDialog>
     </template>
@@ -1127,6 +1126,16 @@ function locationRoleText(locationId: string) {
 .sc-preview-dialog__body {
   padding: var(--mp-space-20);
   background: var(--surface-secondary);
+}
+
+.sc-hero-card :deep(.sf-preview__viewport--lumos) {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.sc-preview-dialog__body :deep(.sf-preview__viewport--lumos) {
+  max-height: min(70vh, 760px);
+  overflow: auto;
 }
 
 .sc-header__row {

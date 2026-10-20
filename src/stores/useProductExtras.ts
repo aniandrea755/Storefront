@@ -542,6 +542,13 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     seedCollection(20, 'All Products', 'Automated', '2025-10-10T19:06:00Z', 45),
     { ...seedCollection(21, 'Summer Feature Picks', 'Manual', '2026-07-12T09:15:00Z', 3), productItemIds: ['ring1', 'pbd', 'bbsm'], rules: [] },
     { ...seedCollection(22, 'Clearance — Inactive', 'Manual', '2026-03-02T11:00:00Z', 0, 'Inactive'), productItemIds: [], rules: [] },
+    seedCollection(30, 'Bedroom Collections', 'Manual', '2026-09-01T04:00:00Z', 0),
+    { ...seedCollection(31, 'Bedroom', 'Manual', '2026-09-01T04:00:00Z', 12), parent: 'Bedroom Collections', imageName: 'bedroom' },
+    { ...seedCollection(32, 'Living Room', 'Manual', '2026-09-01T04:00:00Z', 9), parent: 'Bedroom Collections', imageName: 'living-room' },
+    { ...seedCollection(33, 'Dining Room', 'Manual', '2026-09-01T04:00:00Z', 8), parent: 'Bedroom Collections', imageName: 'dining-room' },
+    { ...seedCollection(34, 'Office', 'Manual', '2026-09-01T04:00:00Z', 6), parent: 'Bedroom Collections', imageName: 'office' },
+    { ...seedCollection(35, 'Room Dividers', 'Manual', '2026-09-01T04:00:00Z', 4), parent: 'Bedroom Collections', imageName: 'room-dividers' },
+    { ...seedCollection(36, 'Hallway', 'Manual', '2026-09-01T04:00:00Z', 2), parent: 'Bedroom Collections', imageName: '' },
   ])
 
   function nextCollectionId(): number {
@@ -596,6 +603,11 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     collections.value = collections.value.filter((c) => c.id !== id)
   }
 
+  /** Active child collections of a parent, in catalog order. No assignment — the parent is the collection being viewed. */
+  function childrenOf(parentTitle: string): Collection[] {
+    return collections.value.filter((collection) => collection.parent === parentTitle && collection.status === 'Active')
+  }
+
   function deleteCollections(ids: number[]): void {
     collections.value = collections.value.filter((c) => !ids.includes(c.id))
   }
@@ -646,7 +658,7 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     pricingConfigurations, addPricingConfiguration, updatePricingConfiguration, deletePricingConfiguration,
     reservations, reservableVariants, addReservation, updateReservation, deleteReservation,
     taxCategories, addTaxCategory, updateTaxCategory, deleteTaxCategory,
-    collections, addCollection, updateCollection, deleteCollection, deleteCollections, setCollectionsStatus,
+    collections, childrenOf, addCollection, updateCollection, deleteCollection, deleteCollections, setCollectionsStatus,
     toHandle,
   }
 })
