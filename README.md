@@ -32,7 +32,7 @@ Storybook runs on http://localhost:6006.
 
 ## Dashboards (separate repo)
 
-Dashboard hub, widget grid, commerce overview / campaign analytics navigation, and related Storybook stories live in **[maropost-dashboard](https://github.com/aniandrea755/maropost-dashboard)** — a sibling repository extracted from this project. Use that repo for dashboard-focused work; this monolith still includes the same routes for now.
+Dashboard hub, Navigation v3 (Commerce / Campaign analytics sidebar), Commerce Overview section tabs, widget grid, and Storybook stories are developed in **[maropost-dashboard](https://github.com/aniandrea755/maropost-dashboard)**. This repo keeps legacy dashboard routes for compatibility; new dashboard UX lands in the sibling repo first.
 
 ## What's inside
 
