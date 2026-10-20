@@ -1,0 +1,15 @@
+import{r as i}from"./iframe-DH-XNaA6.js";import{t as d}from"./journeyFlowData-BfF7KkYe.js";import{b as u,t as l}from"./journeyTemplateSetup-_-TxNawk.js";import{J as n}from"./JourneyTemplateSetup-CYDX3XEB.js";import"./preload-helper-PPVm8Dsz.js";import"./MpFormSection-BK5pVmwO.js";import"./_plugin-vue_export-helper-DlAUqK2U.js";import"./MpFormGrid-CIGBvnp2.js";import"./MpFormField-BzBLjfV3.js";import"./MpListRow-Bc2C1VpE.js";import"./MpAlert-BkuXQkUX.js";import"./JourneyMiniPreview-lCxnYyDK.js";import"./useFlowTree-3VPeKGZt.js";import"./flowTheme-luQBUdZG.js";import"./useContent-V5SZViyb.js";import"./useContacts-Cjs8oDJ0.js";import"./useOnboarding-Bm2wJjXK.js";import"./useAccounts-BCL4QMJk.js";import"./usePlg-Bc4Wejg8.js";import"./useCommerce-rriUBVdv.js";function t(e){return{args:{template:d[e],meta:l[e]}}}const O={title:"Product/Marketing/Journeys/JourneyTemplateSetup",component:n,tags:["autodocs"],parameters:{layout:"padded",docs:{description:{component:`
+### Overview
+Step 2 of the template wizard ("Setup for … journey"): prerequisites checklist (✓ / ✗ with a
+"create it" action), sender defaults, the trigger binding that varies per template (lists · store ·
+segment · product / product categories), one content pick per email, and — where the template has
+one — the Lapsed Buyer filter segment and the Email Re-Engagement Do Not Mail list.
+
+Option lists come from the sandbox mock stores. **Abandoned Cart** shows the missing-prerequisite
+state: the sandbox has no connected webstore, so Finish stays blocked.
+        `}}},render:e=>({components:{JourneyTemplateSetup:n},setup(){const p=i(u(e.meta.emails.length)),c=i(!1);return{args:e,bindings:p,valid:c}},template:`
+      <div style="max-width: 880px;">
+        <JourneyTemplateSetup v-model="bindings" :template="args.template" :meta="args.meta" @update:valid="valid = $event" />
+        <p class="text-caption text-medium-emphasis mt-4">finish enabled: {{ valid }}</p>
+      </div>
+    `})},r=t("welcome"),o=t("abandoned-cart"),a=t("nurture"),s=t("re-engagement"),m=t("lapsed-buyer");r.parameters={...r.parameters,docs:{...r.parameters?.docs,source:{originalSource:"story('welcome')",...r.parameters?.docs?.source}}};o.parameters={...o.parameters,docs:{...o.parameters?.docs,source:{originalSource:"story('abandoned-cart')",...o.parameters?.docs?.source}}};a.parameters={...a.parameters,docs:{...a.parameters?.docs,source:{originalSource:"story('nurture')",...a.parameters?.docs?.source}}};s.parameters={...s.parameters,docs:{...s.parameters?.docs,source:{originalSource:"story('re-engagement')",...s.parameters?.docs?.source}}};m.parameters={...m.parameters,docs:{...m.parameters?.docs,source:{originalSource:"story('lapsed-buyer')",...m.parameters?.docs?.source}}};const P=["Welcome","AbandonedCartMissingStore","NurtureProducts","ReEngagementDoNotMail","LapsedBuyerFilter"];export{o as AbandonedCartMissingStore,m as LapsedBuyerFilter,a as NurtureProducts,s as ReEngagementDoNotMail,r as Welcome,P as __namedExportsOrder,O as default};
